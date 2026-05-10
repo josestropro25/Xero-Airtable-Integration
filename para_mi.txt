@@ -1,0 +1,6 @@
+- Seguimos con las purchases orders.
+- integracions con excel 
+
+
+questions:
+One question, when createing a invoice for mulitple producs products BARC 2026-05-3, BARC 2026-05-4, BARC 2026-05-5, BARC 2026-05-6, can you do it? Dont do it. I just want to know.

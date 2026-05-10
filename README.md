@@ -81,6 +81,7 @@ Close and fully reopen VS Code so Claude Code picks up `.mcp.json`.
 | `CG` | Citigroup |
 | `MF` | Marex Financial |
 | `NOMU` | Nomura |
+| `NX` | Natixis |
 
 ## Extensions made to the Xero MCP server
 

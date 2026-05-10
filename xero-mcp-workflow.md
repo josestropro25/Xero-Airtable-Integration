@@ -207,6 +207,7 @@ Price = SUM(Sales.Amount[Cash] WHERE Product = [CODE]) × Products.Upfront%
 | `MF` | Marex Financial | `374d776e-5992-43fb-ab2b-672b213feac3` |
 | `BARC` | Barclays | `af46e4b2-7070-46fb-8e92-14917149bf3b` |
 | `NOMU` | Nomura | `496b431f-ae61-4a9e-a118-f76ff81b9b09` |
+| `NX` | Natixis | `b27ed1ba-56e2-44f4-892e-6182f25992cf` |
 
 > Each contact has been configured with:
 > - **Sales defaults → Branding theme:** Standard
@@ -262,6 +263,7 @@ CG    → Citigroup
 MF    → Marex Financial
 BARC  → Barclays
 NOMU  → Nomura
+NX    → Natixis
 ```
 
 ### 6.3 Step-by-Step Claude Workflow
@@ -417,6 +419,7 @@ SyntaxError: Unexpected non-whitespace character after JSON at position 449
 | Marex Financial Contact ID | `374d776e-5992-43fb-ab2b-672b213feac3` |
 | Barclays Contact ID | `af46e4b2-7070-46fb-8e92-14917149bf3b` |
 | Nomura Contact ID | `496b431f-ae61-4a9e-a118-f76ff81b9b09` |
+| Natixis Contact ID | `b27ed1ba-56e2-44f4-892e-6182f25992cf` |
 
 ---
 
