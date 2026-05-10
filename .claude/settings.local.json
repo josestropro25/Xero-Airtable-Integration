@@ -1,7 +1,17 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git clone *)"
+      "Bash(git clone *)",
+      "Bash(node \"C:/Users/Jose De la Hoz/Desktop/Repositories/Xero-Airtable-Integration/xero-mcp-server/dist/index.js\")",
+      "mcp__claude_ai_Airtable__search_records",
+      "mcp__claude_ai_Airtable__list_bases",
+      "mcp__claude_ai_Airtable__list_records_for_table",
+      "Bash(cat \"/c/Users/Jose De la Hoz/AppData/Roaming/Code/logs/20260510T193139/mcpGateway.log\" | tail -50)",
+      "Read(//c/Users/Jose De la Hoz/AppData/Roaming/Code/logs/20260510T193139/**)",
+      "Bash(ls \"/c/Users/Jose De la Hoz/AppData/Roaming/Code/logs/20260510T180650/\")",
+      "Read(//c/Users/Jose De la Hoz/AppData/Roaming/Code/logs/20260510T180650//**)",
+      "Read(//c/Users/Jose De la Hoz/**)",
+      "mcp__xero__create-invoice"
     ]
   }
 }

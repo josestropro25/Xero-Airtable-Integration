@@ -23,8 +23,8 @@ The `brandingThemeId` parameter is now supported in `create-invoice` but we don'
 The workflow currently calls `create-invoice` then `update-invoice` to set the due date. Now that `dueDate` is supported on create, the update step is no longer needed.
 **Fix:** Update the Claude workflow prompt / instructions in `xero-mcp-workflow.md` to pass `dueDate` directly on create.
 
-### 5. Test USD invoice creation
-Currency support (`currencyCode`) was the last known blocker. Needs end-to-end test with `BARC 2026-04-3` (USD product) to confirm invoices are created in the correct currency.
+### ~~5. Test USD invoice creation~~ ✓ DONE
+Tested 2026-05-10. BARC 2026-04-3 created in USD correctly. BARC 2026-04-2 created in AUD correctly. Both DRAFT in Xero.
 
 ## Future Features
 

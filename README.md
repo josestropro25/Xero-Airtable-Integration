@@ -41,7 +41,7 @@ cd ..
 
 ### 3. Update the Xero MCP path
 
-In `.claude/settings.json`, update the `args` path to match your machine:
+In `.mcp.json`, update the `args` path to match your machine:
 
 ```json
 "args": ["<absolute-path-to-repo>/xero-mcp-server/dist/index.js"]
@@ -53,13 +53,16 @@ The Airtable MCP uses the hosted server at `https://mcp.airtable.com/mcp`. On fi
 
 ### 5. Restart Claude Code
 
-Reload the window so both MCP servers are picked up.
+Close and fully reopen VS Code so Claude Code picks up `.mcp.json`.
+
+> **Note:** Local MCP servers must be defined in `.mcp.json`, not in `.claude/settings.json`. The `settings.json` file does not support `mcpServers` — servers defined there are silently ignored. `.claude/settings.json` only controls permissions and behaviour settings.
 
 ## Key files
 
 | File | Purpose |
 |---|---|
-| `.claude/settings.json` | MCP server config for Claude Code (committed) |
+| `.mcp.json` | Local MCP server definitions for Claude Code |
+| `.claude/settings.json` | Claude Code behaviour settings (auto-approves project MCPs) |
 | `xero-mcp-server/` | Forked & extended Xero MCP server |
 | `xero-mcp-workflow.md` | Full workflow documentation, IDs, and setup history |
 | `PENDING.md` | Known issues and future work |
