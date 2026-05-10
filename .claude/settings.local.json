@@ -11,7 +11,12 @@
       "Bash(ls \"/c/Users/Jose De la Hoz/AppData/Roaming/Code/logs/20260510T180650/\")",
       "Read(//c/Users/Jose De la Hoz/AppData/Roaming/Code/logs/20260510T180650//**)",
       "Read(//c/Users/Jose De la Hoz/**)",
-      "mcp__xero__create-invoice"
+      "mcp__xero__create-invoice",
+      "Bash(rm -rf \"xero-mcp-server/.git\")",
+      "Bash(git add *)"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\Jose De la Hoz\\Desktop\\Repositories\\Xero-Airtable-Integration\\xero-mcp-server\\.git"
     ]
   }
 }
