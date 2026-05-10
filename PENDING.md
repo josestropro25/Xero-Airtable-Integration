@@ -2,16 +2,11 @@
 
 ## High Priority
 
-### 1. Hardcoded path in `.claude/settings.json`
-The Xero MCP `args` path is absolute and tied to Jose's machine:
-```
-C:/Users/Jose De la Hoz/Desktop/Repositories/Xero-Airtable-Integration/xero-mcp-server/dist/index.js
-```
-**Fix:** Use a relative path or document that this must be updated per machine after cloning.
+### ~~1. Hardcoded path in `.mcp.json`~~ ✓ DONE
+`.mcp.json` is now gitignored. Each user creates their own from `.mcp.json.example` with their local path.
 
-### 2. Xero credentials in `.claude/settings.json`
-`XERO_CLIENT_ID` and `XERO_CLIENT_SECRET` are committed in plaintext.
-**Fix:** Move to `.env` file (gitignored) and load via `env` referencing system env vars, or use a secrets manager.
+### ~~2. Xero credentials in plaintext~~ ✓ DONE
+`.mcp.json` is gitignored. Credentials stay local and are never committed. `.mcp.json.example` uses placeholders.
 
 ### 3. Get Standard Branding Theme ID
 The `brandingThemeId` parameter is now supported in `create-invoice` but we don't yet have the ID for the "Standard" theme in Demo Company (AU).

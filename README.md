@@ -39,13 +39,17 @@ npm run build
 cd ..
 ```
 
-### 3. Update the Xero MCP path
+### 3. Create your local `.mcp.json`
 
-In `.mcp.json`, update the `args` path to match your machine:
+`.mcp.json` is gitignored because it contains credentials and a machine-specific path. Copy the example and fill in your values:
 
-```json
-"args": ["<absolute-path-to-repo>/xero-mcp-server/dist/index.js"]
+```bash
+cp .mcp.json.example .mcp.json
 ```
+
+Then edit `.mcp.json`:
+- Replace `<absolute-path-to-repo>` with the full path to this repo on your machine
+- Replace `<your-xero-client-id>` and `<your-xero-client-secret>` with your Xero app credentials
 
 ### 4. Connect Airtable
 
@@ -61,7 +65,7 @@ Close and fully reopen VS Code so Claude Code picks up `.mcp.json`.
 
 | File | Purpose |
 |---|---|
-| `.mcp.json` | Local MCP server definitions for Claude Code |
+| `.mcp.json.example` | MCP server template — copy to `.mcp.json` (gitignored) and fill in credentials |
 | `.claude/settings.json` | Claude Code behaviour settings (auto-approves project MCPs) |
 | `xero-mcp-server/` | Forked & extended Xero MCP server |
 | `xero-mcp-workflow.md` | Full workflow documentation, IDs, and setup history |

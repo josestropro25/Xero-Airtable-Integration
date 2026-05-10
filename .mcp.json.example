@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "xero": {
+      "command": "node",
+      "args": [
+        "<absolute-path-to-repo>/xero-mcp-server/dist/index.js"
+      ],
+      "env": {
+        "XERO_CLIENT_ID": "<your-xero-client-id>",
+        "XERO_CLIENT_SECRET": "<your-xero-client-secret>",
+        "XERO_SCOPES": "accounting.invoices accounting.payments accounting.banktransactions accounting.manualjournals accounting.contacts accounting.settings payroll.employees payroll.timesheets payroll.settings"
+      }
+    }
+  }
+}
