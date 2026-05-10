@@ -69,6 +69,7 @@ Close and fully reopen VS Code so Claude Code picks up `.mcp.json`.
 | `.claude/settings.json` | Claude Code behaviour settings (auto-approves project MCPs) |
 | `xero-mcp-server/` | Forked & extended Xero MCP server |
 | `xero-mcp-workflow.md` | Full workflow documentation, IDs, and setup history |
+| `TROUBLESHOOTING.md` | Errors and fixes encountered during setup and development |
 | `PENDING.md` | Known issues and future work |
 
 ## Contact → Code prefix mapping
