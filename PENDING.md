@@ -8,9 +8,9 @@
 ### ~~2. Xero credentials in plaintext~~ ✓ DONE
 `.mcp.json` is gitignored. Credentials stay local and are never committed. `.mcp.json.example` uses placeholders.
 
-### 3. Get Standard Branding Theme ID
-The `brandingThemeId` parameter is now supported in `create-invoice` but we don't yet have the ID for the "Standard" theme in Demo Company (AU).
-**Fix:** Call `list-branding-themes` in Claude after MCP is running and store the ID here and in `xero-mcp-workflow.md`.
+### ~~3. Get Standard Branding Theme ID~~ ✓ DONE
+Standard: `aefae6d5-7bbe-4e2e-aadc-302cd07a0fc1`
+Also available: Special Projects (`dfe23d27-a3a6-4ef3-a5ca-b9e02b142dde`), Very orange invoice! (`2ced98b8-3be9-42c4-ae79-fe3c8bca3490`)
 
 ## Medium Priority
 

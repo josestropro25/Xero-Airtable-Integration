@@ -404,15 +404,15 @@ taskkill /F /IM claude.exe /T
 ```
 Then relaunch.
 
-### 8.3 Getting the Standard Branding Theme ID
-You'll need the Branding Theme ID to pass it in the invoice. Call this in Claude after the MCP is working:
-```
-List all Xero branding themes
-```
-Or via the API:
-```
-GET https://api.xero.com/api.xro/2.0/BrandingThemes
-```
+### 8.3 Branding Theme IDs (Demo Company AU)
+
+| Name | ID |
+|---|---|
+| Standard | `aefae6d5-7bbe-4e2e-aadc-302cd07a0fc1` |
+| Special Projects | `dfe23d27-a3a6-4ef3-a5ca-b9e02b142dde` |
+| Very orange invoice! | `2ced98b8-3be9-42c4-ae79-fe3c8bca3490` |
+
+To fetch themes in future, use the `list-branding-themes` tool (added to this MCP server).
 
 ---
 
