@@ -1,0 +1,21 @@
+# Dependencies
+xero-mcp-server/node_modules/
+
+# Build output
+xero-mcp-server/dist/
+
+# Environment & secrets
+.env
+.env.local
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+*.swp
