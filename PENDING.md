@@ -23,9 +23,16 @@ Tested 2026-05-10. BARC 2026-04-3 created in USD correctly. BARC 2026-04-2 creat
 
 ## Future Features
 
-### 6. Purchase Orders workflow
+### 6. Invoice reconciliation workflow
+For a given month (e.g. April 2026), compare all products in Airtable against invoices in Xero and produce a match/mismatch report showing: expected amount vs actual amount, currency, status, and missing invoices.
+
+**Logic:** Query Airtable Products filtered by code pattern `xx 2026-04-xx` → calculate expected invoice per product → query Xero invoices filtered by reference → compare side by side.
+
+**Note:** Only meaningful against the production Xero org. Demo Company only has the test invoices created during development. Build the workflow now, point it at prod when ready (see item 8).
+
+### 7. Purchase Orders workflow
 After the invoice workflow is stable, apply the same pattern to build a Purchase Orders automation pulling from the same Airtable base.
 See `xero-mcp-workflow.md` Section 8 for reference.
 
-### 7. Rebuild for production Xero org
+### 8. Rebuild for production Xero org
 Everything is currently configured against Demo Company (AU). When ready to go live, new Xero org ID, contact IDs, and account IDs will need to be mapped.

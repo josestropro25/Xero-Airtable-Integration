@@ -247,16 +247,32 @@ Price = SUM(Sales.Amount[Cash] WHERE Product = [CODE]) × Products.Upfront%
 | Tax Rate | GST Free Income | Fixed |
 | Status | DRAFT | Fixed (review before approving) |
 
-### 6.2 Contact Prefix Mapping Logic
+### 6.2 Product Code Structure
+
+Product codes follow this format:
 ```
-Code: "BARC 2026-04-2"
-       ^^^^
-       Prefix = "BARC" → Contact = Barclays
+[ISSUER] [YEAR]-[MONTH]-[SEQUENCE]
+```
 
-Code: "BNP 2026-03-1"
-       ^^^
-       Prefix = "BNP" → Contact = BNP Paribas
+| Segment | Description | Example |
+|---|---|---|
+| `ISSUER` | Issuer bank code (prefix) | `BARC`, `CG`, `NX` |
+| `YEAR` | 4-digit year | `2026` |
+| `MONTH` | 2-digit month | `04` = April |
+| `SEQUENCE` | nth product created for that issuer in that month | `5` = fifth |
 
+**Examples:**
+- `CG 2026-03-1` → Citigroup, March 2026, 1st product that month for CG
+- `BARC 2026-04-5` → Barclays, April 2026, 5th product that month for BARC
+
+**Natural language inference:**
+- "April 2026 products" → all codes matching `* 2026-04-*`
+- "March BNP products" → all codes matching `BNP 2026-03-*`
+- "All Nomura products" → all codes matching `NOMU *`
+
+### 6.3 Contact Prefix Mapping
+
+```
 Mapping:
 BNP   → BNP Paribas
 CG    → Citigroup
@@ -266,7 +282,7 @@ NOMU  → Nomura
 NX    → Natixis
 ```
 
-### 6.3 Step-by-Step Claude Workflow
+### 6.4 Step-by-Step Claude Workflow
 
 **User says:** `"Create invoice for BARC 2026-04-2"`
 
