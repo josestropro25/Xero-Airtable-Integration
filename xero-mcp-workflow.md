@@ -181,6 +181,10 @@ Then relaunch Claude Desktop. This is required after any config change.
 | ID | `fldKUXgAlHYdAOFPy` | Auto Number | - |
 | Product | `fldbye2NOk0tq8Xjh` | Lookup | Link to Products |
 | **Amount [Cash]** | `fldrqlyC6R5O3qSDc` | Currency | SUM for invoice price |
+| **Adviser Group** | `fldtIpJc1wNR2JzbW` | Lookup | RCTI contact grouping |
+| **Notional [Local]** | `fldGnTn09blO0Q6rq` | Formula | RCTI line item notional (= Amount [Cash]) |
+| **Adviser Fee %** | `fldRoRw2EZqTgxknp` | Lookup | RCTI price calculation |
+| **Adviser(s)** | `fldU5LNEzPEWjtGIO` | Link | Individual adviser name for RCTI description |
 
 ### 4.3 Invoice Calculation Formula
 ```
@@ -227,16 +231,40 @@ The Sales `Product` lookup field stores values like `"CG 2026-03-1: 12M US Banks
 > - **Sales defaults → Branding theme:** Standard
 > - **Sales defaults → Amounts are:** (set as needed)
 
-### 5.3 Account
+### 5.3 Accounts
 
-| Code | Name | Type | Tax Type | Xero ID |
-|---|---|---|---|---|
-| `201` | Distribution Fees - Advisory | Revenue | EXEMPTOUTPUT (GST Free Income) | `44accb59-40c5-4dcc-b7e1-359fb21eb3c3` |
+| Code | Name | Type | Tax Type | Xero ID | Used For |
+|---|---|---|---|---|---|
+| `201` | Distribution Fees - Advisory | Revenue | EXEMPTOUTPUT (GST Free Income) | `44accb59-40c5-4dcc-b7e1-359fb21eb3c3` | Invoices |
+| `310` | Referral Fees - Distribution fees | Direct Costs | INPUT (GST on Expenses 10%) | `078b095c-7e80-4887-9712-1d3721dfffcf` | RCTIs |
 
-### 5.4 Tax Rate
-- **Name:** GST Free Income
-- **Tax Type:** `EXEMPTOUTPUT`
-- **Rate:** 0%
+### 5.4 Branding Themes
+
+| Name | ID | Used For |
+|---|---|---|
+| Standard | `aefae6d5-7bbe-4e2e-aadc-302cd07a0fc1` | Invoices |
+| RCTI | `f6f9aca6-fb04-41d9-a9be-b62c26acd653` | RCTIs |
+
+### 5.5 Tax Rates
+- **Invoices:** GST Free Income — `EXEMPTOUTPUT` — 0%
+- **RCTIs:** GST on Expenses — `INPUT` — 10%
+
+### 5.6 Adviser Group Contacts (for RCTIs)
+
+| Adviser Group | Xero Contact ID |
+|---|---|
+| Gloryhouse | `d737af0b-1bb4-429b-aab0-5ff25867df8f` |
+| Solomons | `b82714d7-6ae9-4245-a1e9-76b3a8321d5d` |
+| Barker Wealth | `f3490709-1a34-4efe-a3ad-4af64881dd98` |
+| Canaccord Perth | `b9f14ca7-36d8-436c-a9f8-c0223f2a94e9` |
+| Canaccord Brisbane | `4acc60a8-9914-4455-9a92-1d704f20f923` |
+| Life Unshackled | `6414a789-052f-472a-97c7-9475b7ac3cb8` |
+| MPC Markets | `71699cf3-e817-4bd7-b729-4d36bfa40d93` |
+| Avant Capital | `418bc312-fde5-4ef0-ac45-03383b09ede3` |
+| Harbour Bridge Capital | `0fce1ca7-71c1-4f9c-ab99-258a1e846874` |
+| Boston Global Wealth | `1f7f0c54-7a5d-41ce-ba56-589cc9a42b73` |
+| Sherpa Financial | `0d18e347-c793-45e5-be5c-65ef79ab9c73` |
+| RiverX | `002f0de1-a216-4d0d-9acf-f6c16f0715d9` |
 
 ---
 
@@ -307,11 +335,30 @@ MBL   → Macquarie Bank
    - **If not found** → continue to step 2.
 2. Query Airtable Products table filtered by `Code = "BARC 2026-04-2"`
    - Gets: Strike Date, Upfront%, Currency
-3. Query Airtable Sales table filtered by `Product contains "BARC 2026-04-2"`
+3. Query Airtable Sales table — filter by `Product name startsWith "BARC 2026-04-2:"` (**colon required — see Section 4.4**)
    - Gets: SUM of `Amount [Cash]`
 4. Calculate: `Price = SUM × Upfront%`
 5. Extract prefix `BARC` → map to Xero Contact ID
 6. Call `xero:create-invoice` with all fields including `dueDate`, `currencyCode`, `lineAmountTypes`, and `brandingThemeId`
+
+### 6.5 Multi-product Invoices
+
+A single invoice can cover multiple products (one line item per product). This is useful when all products share the same issuer contact.
+
+- Reference: list all codes e.g. `BARC 2026-04-3 / 04-4 / 04-5`
+- Each product = one line item: `Distribution Fees -- {code}`, amount = SUM × Upfront%
+- Use when the user says "create one invoice for these products"
+
+### 6.6 Result Summary Format
+
+Always report results in this format — **net amount only**, no GST-inclusive totals:
+
+| # | Reference | Contact | Net | Tax |
+|---|---|---|---|---|
+| Invoice | BARC 2026-04-2 | Barclays | $5,300 | No Tax |
+| RCTI PO-0028 | BARC 2026-04-3/4/5/6 | Canaccord Brisbane | $12,703 | Exclusive |
+
+**Tax column values:** `No Tax`, `Exclusive`, `Inclusive`
 
 ---
 
@@ -333,6 +380,12 @@ Sales rows for a product are grouped by **Adviser Group**:
 - **One PO per unique Adviser Group** per product
 - If a group appears in multiple sales rows (multiple advisers) → **one PO with multiple line items**
 - If a product has multiple different groups → **separate PO per group**
+
+**Multi-product RCTIs:** When multiple products share the same adviser group (common with Canaccord and same adviser), they can be consolidated into **one RCTI** with one line item per product:
+- Reference: list all codes e.g. `BARC 2026-04-3 / 04-4 / 04-5 / 04-6`
+- Date: earliest strike date across the products
+- Each product = one line item with its own description, notional, fee, and FX rate if USD
+- Triggered when user says "create one RCTI for these products" or lists multiple products for the same group
 
 **Exceptions — skip and notify the user, do NOT create a PO:**
 - Adviser Group = `"Cindi Mao"` → skip, report: _"Skipped: Cindi Mao — no PO required"_
@@ -394,7 +447,7 @@ Sales rows for a product are grouped by **Adviser Group**:
 | Account | `310 - Referral Fees - Distribution fees` |
 | Tax | GST on Expenses (10%) |
 
-> **FX Rate note:** `fx` is stored as AUD→USD (e.g., `0.7093` means 1 AUD = 0.7093 USD). Dividing by fx converts USD to AUD (e.g., $2,700 USD / 0.7093 ≈ $3,806 AUD).
+> **FX Rate note:** `fx` is stored as AUD→USD (e.g., `0.7093` means 1 AUD = 0.7093 USD). Dividing by fx converts USD to AUD (e.g., $2,700 USD / 0.7093 ≈ $3,806 AUD). The FX field in Airtable may be `1` or outdated — **always ask the user for the current rate when creating RCTIs for USD products**.
 
 > **Adviser Fee % note:** stored as decimal in Airtable (e.g., `0.015` = 1.5%). No `/100` needed.
 
@@ -416,17 +469,21 @@ Sales rows for a product are grouped by **Adviser Group**:
 Forked `@xeroapi/xero-mcp-server` into `xero-mcp-server/` within this repo and extended `create-invoice` with four missing fields. Also added `list-branding-themes` tool.
 
 ### 8.2 Key Files Modified
+
 ```
 xero-mcp-server/
 ├── src/
 │   ├── tools/
 │   │   ├── create/
-│   │   │   └── create-invoice.tool.ts        ← Added 4 new parameters
+│   │   │   ├── create-invoice.tool.ts           ← Added currencyCode, dueDate, lineAmountTypes, brandingThemeId
+│   │   │   ├── create-purchase-order.tool.ts    ← New tool for RCTIs
+│   │   │   └── index.ts                         ← Registered purchase order tool
 │   │   └── list/
-│   │       ├── list-branding-themes.tool.ts  ← New tool
-│   │       └── index.ts                      ← Registered new tool
+│   │       ├── list-branding-themes.tool.ts     ← New tool
+│   │       └── index.ts                         ← Registered branding themes tool
 │   └── handlers/
-│       ├── create-xero-invoice.handler.ts    ← Passes new params to Xero API
+│       ├── create-xero-invoice.handler.ts       ← Passes new params to Xero API
+│       ├── create-xero-purchase-order.handler.ts ← New handler for RCTIs
 │       └── list-xero-branding-themes.handler.ts ← New handler
 ```
 
@@ -437,17 +494,7 @@ npm install
 npm run build
 ```
 
-After building, the compiled output is at `xero-mcp-server/dist/index.js`. Point both `.mcp.json` (Claude Code) and `claude_desktop_config.json` (Claude Desktop) to this file.
-
-### 8.3 Branding Theme IDs (Demo Company AU)
-
-| Name | ID |
-|---|---|
-| Standard | `aefae6d5-7bbe-4e2e-aadc-302cd07a0fc1` |
-| Special Projects | `dfe23d27-a3a6-4ef3-a5ca-b9e02b142dde` |
-| Very orange invoice! | `2ced98b8-3be9-42c4-ae79-fe3c8bca3490` |
-
-To fetch themes in future, use the `list-branding-themes` tool (added to this MCP server).
+After building, the compiled output is at `xero-mcp-server/dist/index.js`. Point both `.mcp.json` (Claude Code) and `claude_desktop_config.json` (Claude Desktop) to this file. Fully close and reopen VS Code after any build.
 
 ---
 
@@ -524,21 +571,32 @@ SyntaxError: Unexpected non-whitespace character after JSON at position 449
 | Sales Table ID | `tblDF2DwnJecCmvE2` |
 | AdviserFees Table ID | `tblnoxmwS2YM3Erjq` |
 
-### Key Xero IDs
-| Item | Value |
-|---|---|
-| Account 201 ID | `44accb59-40c5-4dcc-b7e1-359fb21eb3c3` |
-| BNP Paribas Contact ID | `cab01bf8-994a-476b-84e8-40e2ceecae92` |
-| Citigroup Contact ID | `b2cc653e-9523-4215-bb6f-87f86d983728` |
-| Marex Financial Contact ID | `374d776e-5992-43fb-ab2b-672b213feac3` |
-| Barclays Contact ID | `af46e4b2-7070-46fb-8e92-14917149bf3b` |
-| Nomura Contact ID | `496b431f-ae61-4a9e-a118-f76ff81b9b09` |
-| Natixis Contact ID | `b27ed1ba-56e2-44f4-892e-6182f25992cf` |
+### Key Xero IDs — Accounts
+| Code | Name | ID |
+|---|---|---|
+| 201 | Distribution Fees - Advisory (Invoices) | `44accb59-40c5-4dcc-b7e1-359fb21eb3c3` |
+| 310 | Referral Fees - Distribution fees (RCTIs) | `078b095c-7e80-4887-9712-1d3721dfffcf` |
+
+### Key Xero IDs — Issuer Bank Contacts (for Invoices)
+| Prefix | Name | Contact ID |
+|---|---|---|
+| BNP | BNP Paribas | `cab01bf8-994a-476b-84e8-40e2ceecae92` |
+| CG | Citigroup | `b2cc653e-9523-4215-bb6f-87f86d983728` |
+| MF | Marex Financial | `374d776e-5992-43fb-ab2b-672b213feac3` |
+| BARC | Barclays | `af46e4b2-7070-46fb-8e92-14917149bf3b` |
+| NOMU | Nomura | `496b431f-ae61-4a9e-a118-f76ff81b9b09` |
+| NX | Natixis | `b27ed1ba-56e2-44f4-892e-6182f25992cf` |
+| MBL | Macquarie Bank | `7cd46512-594f-4f17-bc3d-fe7d04204024` |
+
+### Key Xero IDs — Adviser Group Contacts (for RCTIs)
+See Section 5.6 for full list.
 
 ---
 
 > 📝 **Next Steps:**
 > 1. ~~Move to Claude Code~~ ✅
 > 2. ~~Clone `xero-mcp-server` and add missing invoice fields~~ ✅
-> 3. ~~Test with Demo Company~~ ✅ (BARC 2026-04-2 AUD + BARC 2026-04-3 USD confirmed)
-> 4. Apply the same pattern to build the **Purchase Orders** workflow
+> 3. ~~Test with Demo Company~~ ✅ (invoices and RCTIs confirmed)
+> 4. ~~Build Purchase Orders (RCTI) workflow~~ ✅
+> 5. Build invoice reconciliation workflow (see PENDING.md item 6)
+> 6. Migrate to production Xero org (see PENDING.md item 8)
