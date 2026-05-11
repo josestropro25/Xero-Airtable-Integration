@@ -10,8 +10,8 @@
 4. [Airtable Data Model](#4-airtable-data-model)
 5. [Xero Configuration](#5-xero-configuration)
 6. [Invoice Creation Workflow](#6-invoice-creation-workflow)
-7. [Known Limitations of the MCP Server](#7-known-limitations-of-the-mcp-server)
-8. [Claude Code Extension Plan](#8-claude-code-extension-plan)
+7. [Purchase Order (RCTI) Workflow](#7-purchase-order-rcti-workflow)
+8. [MCP Server Extensions](#8-mcp-server-extensions-completed)
 9. [Common Errors & Fixes](#9-common-errors--fixes)
 10. [Reference: IDs & Credentials](#10-reference-ids--credentials)
 
@@ -19,7 +19,11 @@
 
 ## 1. Project Overview
 
-The goal is to automate the creation of **distribution fee invoices** in Xero by pulling data from an **Airtable base** ("Distribution Tracker"), using Claude as the orchestration layer via the **Xero MCP server**.
+The goal is to automate the creation of **distribution fee invoices** and **RCTIs (purchase orders)** in Xero by pulling data from an **Airtable base** ("Distribution Tracker"), using Claude as the orchestration layer via the **Xero MCP server**.
+
+> **Terminology — never mix these:**
+> - **Invoice** = sales invoice to issuer bank (ACCREC). Created from product Upfront% × total sales.
+> - **RCTI** = purchase order to adviser group (ACCPAY). Created from AdviserRev per sales row. Also called "purchase order" in Xero.
 
 ### Trigger
 User says: _"Create invoice for product [CODE]"_ (e.g. `BARC 2026-04-2`)
@@ -187,6 +191,15 @@ Price = SUM(Sales.Amount[Cash] WHERE Product = [CODE]) × Products.Upfront%
 - `BARC 2026-04-2`: SUM = $200,000 × 2.65% = **$5,300.00 AUD**
 - `BARC 2026-04-3`: SUM = $120,000 × 2.65% = **$3,180.00 USD**
 
+### 4.4 Critical: Exact Product Code Matching
+
+The Sales `Product` lookup field stores values like `"CG 2026-03-1: 12M US Banks..."`. When filtering Sales rows by product code, always match using `code + ":"` — **never use a plain `startsWith(code)`**.
+
+**Why:** `startsWith("CG 2026-03-1")` incorrectly matches `CG 2026-03-10`, `CG 2026-03-11`, etc., pulling in sales from other products and producing wrong amounts.
+
+**Correct filter:** `name.startsWith("CG 2026-03-1:")`  
+**Wrong filter:** `name.startsWith("CG 2026-03-1")`
+
 ---
 
 ## 5. Xero Configuration
@@ -208,6 +221,7 @@ Price = SUM(Sales.Amount[Cash] WHERE Product = [CODE]) × Products.Upfront%
 | `BARC` | Barclays | `af46e4b2-7070-46fb-8e92-14917149bf3b` |
 | `NOMU` | Nomura | `496b431f-ae61-4a9e-a118-f76ff81b9b09` |
 | `NX` | Natixis | `b27ed1ba-56e2-44f4-892e-6182f25992cf` |
+| `MBL` | Macquarie Bank | `7cd46512-594f-4f17-bc3d-fe7d04204024` |
 
 > Each contact has been configured with:
 > - **Sales defaults → Branding theme:** Standard
@@ -280,6 +294,7 @@ MF    → Marex Financial
 BARC  → Barclays
 NOMU  → Nomura
 NX    → Natixis
+MBL   → Macquarie Bank
 ```
 
 ### 6.4 Step-by-Step Claude Workflow
@@ -287,28 +302,111 @@ NX    → Natixis
 **User says:** `"Create invoice for BARC 2026-04-2"`
 
 **Claude does:**
-1. Query Airtable Products table filtered by `Code = "BARC 2026-04-2"`
+1. Check Xero — call `xero:list-invoices` filtered by `reference = "BARC 2026-04-2"`
+   - **If found** → stop. Report the existing invoice (ID, status, amount, link). Do not proceed.
+   - **If not found** → continue to step 2.
+2. Query Airtable Products table filtered by `Code = "BARC 2026-04-2"`
    - Gets: Strike Date, Upfront%, Currency
-2. Query Airtable Sales table filtered by `Product contains "BARC 2026-04-2"`
+3. Query Airtable Sales table filtered by `Product contains "BARC 2026-04-2"`
    - Gets: SUM of `Amount [Cash]`
-3. Calculate: `Price = SUM × Upfront%`
-4. Extract prefix `BARC` → map to Xero Contact ID
-5. Call `xero:create-invoice` with all fields including `dueDate`, `currencyCode`, `lineAmountTypes`, and `brandingThemeId`
+4. Calculate: `Price = SUM × Upfront%`
+5. Extract prefix `BARC` → map to Xero Contact ID
+6. Call `xero:create-invoice` with all fields including `dueDate`, `currencyCode`, `lineAmountTypes`, and `brandingThemeId`
 
 ---
 
-## 7. MCP Server Extensions (Completed)
+## 7. Purchase Order (RCTI) Workflow
 
-The upstream `@xeroapi/xero-mcp-server@latest` was missing four fields on invoice creation. All four have been added to our custom fork at `xero-mcp-server/`:
+Purchase orders are called **RCTIs** (Recipient-Created Tax Invoices). They represent the adviser fees paid out to each adviser group for their share of a product's sales.
 
-| Field | Xero API Parameter | Status |
+> **Language note:** The user refers to purchase orders as "RCTIs". Any of the following mean the same thing:
+> - _"Create the RCTI for BARC 2026-03-4"_
+> - _"Do the purchase orders for BARC 2026-03-4"_
+> - _"Reconcile RCTIs with invoices"_
+
+### 7.1 Trigger
+User says: _"Create purchase orders for BARC 2026-03-4"_
+
+### 7.2 Grouping Logic
+
+Sales rows for a product are grouped by **Adviser Group**:
+- **One PO per unique Adviser Group** per product
+- If a group appears in multiple sales rows (multiple advisers) → **one PO with multiple line items**
+- If a product has multiple different groups → **separate PO per group**
+
+**Exceptions — skip and notify the user, do NOT create a PO:**
+- Adviser Group = `"Cindi Mao"` → skip, report: _"Skipped: Cindi Mao — no PO required"_
+- Adviser Group = `"Self-directed"` (shown as `"Self Directed"` in Airtable) → skip, report: _"Skipped: Self-directed sale — no PO required"_
+
+### 7.3 Step-by-Step Claude Workflow
+
+**User says:** `"Create purchase orders for BARC 2026-03-4"`
+
+**Claude does:**
+1. Check Xero — call `xero:list-purchase-orders` filtered by `reference = "BARC 2026-03-4"`
+   - **If found** → stop. Report existing POs (ID, status, adviser group, link). Do not proceed.
+   - **If not found** → continue to step 2.
+2. Query Airtable Products table filtered by `Code = "BARC 2026-03-4"`
+   - Gets: Strike Date, Currency, FX Rate
+3. Query Airtable Sales table — fetch all rows, filter by product code
+   - Gets per row: Adviser Group, Notional [Local], Adviser Fee %, Adviser(s), AdviserRev[Local]
+4. Filter out exception groups (`Cindi Mao`, `Self-directed`) — notify user for each skipped row
+5. Group remaining rows by Adviser Group
+6. For each Adviser Group:
+   - Verify the group exists as a Xero contact (create if missing — notify user)
+   - Build line items (one per sales row in the group)
+   - Create one ACCPAY purchase order in Xero
+7. Report all created POs with links
+8. Remind user to tick the `RCTI` checkbox on the product in Airtable
+
+### 7.4 Purchase Order Spec
+
+| Field | Value | Source |
 |---|---|---|
-| Currency | `currencyCode` | ✅ Added — USD/AUD/GBP work correctly |
-| Amounts Are | `lineAmountTypes` | ✅ Added — pass `NOTAX`, `EXCLUSIVE`, or `INCLUSIVE` |
-| Branding Theme | `brandingThemeId` | ✅ Added — Standard ID: `aefae6d5-7bbe-4e2e-aadc-302cd07a0fc1` |
-| Due Date on create | `dueDate` | ✅ Added — no second update call needed |
+| Contact | Adviser Group name | `sales.AdviserGroup` |
+| Date | Strike Date | `products.Strike Date (Approx)` |
+| Delivery Date | Today | System |
+| Order Number | Auto-generated | Xero |
+| Reference | Product code | `products.Code` |
+| Branding Theme | RCTI | Fixed (see Section 10 for ID) |
+| Currency | AUD | Always — even for USD products |
+| Tax | Tax Exclusive | `lineAmountTypes: EXCLUSIVE` |
 
-A `list-branding-themes` tool was also added to retrieve theme IDs on demand.
+### 7.5 Line Item Spec
+
+**For AUD products** (`products.Currency = AUD`):
+
+| Field | Value |
+|---|---|
+| Description | `{products.Code}`<br>`{notional[Local]} @ {adviserFee%}`<br>`{adviser name(s)}` *(omit if blank — flag it)* |
+| Qty | 1 |
+| Price | `notional[Local] × adviserFee%` |
+| Account | `310 - Referral Fees - Distribution fees` |
+| Tax | GST on Expenses (10%) |
+
+**For USD products** (`products.Currency = USD`):
+
+| Field | Value |
+|---|---|
+| Description | `{products.Code}`<br>`Conversion Rate at {fx}`<br>`{notional[Local]} @ {adviserFee%}`<br>`{adviser name(s)}` *(omit if blank — flag it)* |
+| Qty | 1 |
+| Price | `(notional[Local] × adviserFee%) / fx` *(converts USD adviser fee to AUD)* |
+| Account | `310 - Referral Fees - Distribution fees` |
+| Tax | GST on Expenses (10%) |
+
+> **FX Rate note:** `fx` is stored as AUD→USD (e.g., `0.7093` means 1 AUD = 0.7093 USD). Dividing by fx converts USD to AUD (e.g., $2,700 USD / 0.7093 ≈ $3,806 AUD).
+
+> **Adviser Fee % note:** stored as decimal in Airtable (e.g., `0.015` = 1.5%). No `/100` needed.
+
+> **Adviser name note:** if `Adviser(s)` field is blank, omit that description line and flag: _"Sales row [ID] has no adviser name — update Airtable before finalising."_ **Exception:** if Adviser Group is `Gloryhouse`, always use `Yan Hu` regardless of what Airtable says.
+
+> **RCTI checkbox note:** Claude does NOT tick the RCTI checkbox in Airtable (read-only rule). User must tick it manually after reviewing POs in Xero.
+
+### 7.6 Pre-requisites Before Testing
+
+1. **RCTI branding theme** — must be created manually in Xero (Settings → Invoice Settings → Branding Themes → Add). Then run `list-branding-themes` to get the ID.
+2. **Adviser Group contacts** — exist in the real Xero org but not in Demo Company. Must be created before testing.
+3. **Account 310** — verify it exists in Xero and get its ID via `list-accounts`.
 
 ---
 

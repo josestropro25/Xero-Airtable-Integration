@@ -1,6 +1,24 @@
 - Seguimos con las purchases orders.
+-logica de cuando el rcti viene de un invoice en USD.
+- Enviar email cuando el producto esta en USD y ya tenemos el fx rate. (preguntar despues que se hizo el RCTI y revisar los correos enviados a ver que. y sino, tener un template ya hecho para hacer el draft.)
+-Cindi Mao does not produce RCTI (check before doing it)
 - integracions con excel 
-
+- ask Alan about the RCTI rules for taxex. (por ejemplo Salomons y Gloryhouse)
 
 questions:
 One question, when createing a invoice for mulitple producs products BARC 2026-05-3, BARC 2026-05-4, BARC 2026-05-5, BARC 2026-05-6, can you do it? Dont do it. I just want to know.
+
+
+
+so:
+Here, one product can have multiple advisor groups and therefore multiple advisors , and also one single advisor group can have multiple advisors (under the same advisor group)
+
+So in this case the contact will be the Advisor group. So.
+Contact: sales.
+Date raised: products.strikedate
+delivery date: todays date
+Order number: Default
+Reference: products.code
+Branding Theme: RCTI
+Currency: AUD (Always)
+Tax: Tax Exclusive (for now)
