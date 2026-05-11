@@ -16,7 +16,10 @@
       "Bash(git add *)",
       "Bash(npm run *)",
       "mcp__xero__list-branding-themes",
-      "mcp__xero__create-contact"
+      "mcp__xero__create-contact",
+      "mcp__xero__create-purchase-order",
+      "Bash(node -e ' *)",
+      "Bash(git commit -m ' *)"
     ],
     "additionalDirectories": [
       "C:\\Users\\Jose De la Hoz\\Desktop\\Repositories\\Xero-Airtable-Integration\\xero-mcp-server\\.git"
