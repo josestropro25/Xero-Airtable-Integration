@@ -6,7 +6,7 @@
 - ask Alan about the RCTI rules for taxex. (por ejemplo Salomons y Gloryhouse)
 - If unsure, agent can look into purchase order history and look for one RCTI as reference.
 questions:
-
+- Conect it to the API to stropro and do a wider reconcilation
 
 - tick the distribution tracker after doing the invoice or the RCTI.
 

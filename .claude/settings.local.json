@@ -19,7 +19,8 @@
       "mcp__xero__create-contact",
       "mcp__xero__create-purchase-order",
       "Bash(node -e ' *)",
-      "Bash(git commit -m ' *)"
+      "Bash(git commit -m ' *)",
+      "mcp__claude_ai_Airtable__get_table_schema"
     ],
     "additionalDirectories": [
       "C:\\Users\\Jose De la Hoz\\Desktop\\Repositories\\Xero-Airtable-Integration\\xero-mcp-server\\.git"
