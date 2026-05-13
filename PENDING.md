@@ -23,7 +23,13 @@ Tested 2026-05-10. BARC 2026-04-3 created in USD correctly. BARC 2026-04-2 creat
 
 ## Future Features
 
-### 9. Settlement Party Adv logic for RCTIs
+### 9. Canaccord RCTI contact mapping
+In the real Stropro Xero org, Canaccord does not have a single group contact. Instead there are individual adviser contacts (e.g. "Canaccord Genuity Financial Limited - Michael Willet"). Need to clarify: do RCTIs go to individual adviser contacts, or should a single Canaccord group contact be created? Logic to be defined before Canaccord RCTIs can be created in production.
+
+### ~~10. Invoice branding theme for production~~ ✓ DONE
+Invoices → Standard (`68901f31-8c32-40ae-b1bd-5fe9caaaabc9`). RCTIs → RCTI (`05148358-30af-46a9-97f3-26e3ad572273`).
+
+### 11. Settlement Party Adv logic for RCTIs
 The AdviserFees table has a `Settlement Party Adv` field (`fld4pYt0Ximcc9Y3z`, singleSelect) with values: **Stropro**, **Mason Stevens**, **NetWealth**, **Praemium**. This tracks which platform/custodian is settling the trade. Logic to be defined — will likely affect RCTI contact, GST treatment, or routing. User to provide rules when ready.
 
 

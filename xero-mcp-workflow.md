@@ -208,42 +208,44 @@ The Sales `Product` lookup field stores values like `"CG 2026-03-1: 12M US Banks
 
 ## 5. Xero Configuration
 
+> ⚠️ **All IDs below are for the PRODUCTION Stropro org.** Demo Company IDs are no longer used.
+
 ### 5.1 Organisation
-- **Name:** Demo Company (AU)
-- **ID:** `938e1bc2-a50c-4c6d-881b-4d765a758150`
-- **Short Code:** `!08ZkX`
+- **Name:** StroPro Operations Pty Ltd
+- **ID:** `5ea5440e-8a82-4a8b-85b9-089858c85ab1`
+- **Short Code:** `!h-4cX`
 - **Currency:** AUD
 - **App Type:** Custom Connection
 
-### 5.2 Contacts (Issuer Banks)
+### 5.2 Contacts (Issuer Banks — for Invoices)
 
-| Code Prefix | Contact Name | Xero Contact ID |
+| Code Prefix | Xero Contact Name | Xero Contact ID |
 |---|---|---|
-| `BNP` | BNP Paribas | `cab01bf8-994a-476b-84e8-40e2ceecae92` |
-| `CG` | Citigroup | `b2cc653e-9523-4215-bb6f-87f86d983728` |
-| `MF` | Marex Financial | `374d776e-5992-43fb-ab2b-672b213feac3` |
-| `BARC` | Barclays | `af46e4b2-7070-46fb-8e92-14917149bf3b` |
-| `NOMU` | Nomura | `496b431f-ae61-4a9e-a118-f76ff81b9b09` |
-| `NX` | Natixis | `b27ed1ba-56e2-44f4-892e-6182f25992cf` |
-| `MBL` | Macquarie Bank | `7cd46512-594f-4f17-bc3d-fe7d04204024` |
-
-> Each contact has been configured with:
-> - **Sales defaults → Branding theme:** Standard
-> - **Sales defaults → Amounts are:** (set as needed)
+| `BARC` | Barclays | `bc6678bd-156e-4e42-8608-b82d0b9248d4` |
+| `BNP` | BNP Paribas | `1d4c50e0-88fd-42d3-b798-17693a587b15` |
+| `CG` | Citi Group | `04ac1d3e-9f3f-4732-beba-bf6e0e862039` |
+| `MF` | Marex Financial | `60465ff7-de0a-4e11-834b-345ef63fb83f` |
+| `NX` | Natixis | `639522f0-204a-4251-84a2-e2d7dcc3c157` |
+| `NOMU` | Nomura | `ee861c34-1069-4150-b128-7c41fc480f55` |
+| `MBL` | Macquarie Bank Limited | `caec487e-9ea8-43fb-8570-a79159f85633` |
 
 ### 5.3 Accounts
 
 | Code | Name | Type | Tax Type | Xero ID | Used For |
 |---|---|---|---|---|---|
-| `201` | Distribution Fees - Advisory | Revenue | EXEMPTOUTPUT (GST Free Income) | `44accb59-40c5-4dcc-b7e1-359fb21eb3c3` | Invoices |
-| `310` | Referral Fees - Distribution fees | Direct Costs | INPUT (GST on Expenses 10%) | `078b095c-7e80-4887-9712-1d3721dfffcf` | RCTIs |
+| `200` | Distribution fees - Advisory | Revenue | EXEMPTOUTPUT (GST Free Income) | `7797b245-d6a9-4638-aa9f-c292455333f7` | Invoices |
+| `310` | Referral Fees - Distribution fees | Direct Costs | INPUT (GST on Expenses 10%) | `b0f93463-fddf-41d7-a730-f55d97bdd98d` | RCTIs |
+
+> ⚠️ Invoice account is **200** in production (not 201 as in demo). Account 201 in Stropro is "Distribution fees - Self Managed" — different product.
 
 ### 5.4 Branding Themes
 
 | Name | ID | Used For |
 |---|---|---|
-| Standard | `aefae6d5-7bbe-4e2e-aadc-302cd07a0fc1` | Invoices |
-| RCTI | `f6f9aca6-fb04-41d9-a9be-b62c26acd653` | RCTIs |
+| **Standard** | `68901f31-8c32-40ae-b1bd-5fe9caaaabc9` | All invoices ✅ |
+| **RCTI** | `05148358-30af-46a9-97f3-26e3ad572273` | All RCTIs ✅ |
+| StroproOps AUD | `9bca9998-20c1-41e1-b69a-238b628a185c` | Not used |
+| Stropr Ops USD - Revenue | `e0ad3aaa-50bc-468e-a117-b719b6dd5ed5` | Not used |
 
 ### 5.5 Tax Rates
 - **Invoices:** GST Free Income — `EXEMPTOUTPUT` — 0%
@@ -251,20 +253,11 @@ The Sales `Product` lookup field stores values like `"CG 2026-03-1: 12M US Banks
 
 ### 5.6 Adviser Group Contacts (for RCTIs)
 
-| Adviser Group | Xero Contact ID |
-|---|---|
-| Gloryhouse | `d737af0b-1bb4-429b-aab0-5ff25867df8f` |
-| Solomons | `b82714d7-6ae9-4245-a1e9-76b3a8321d5d` |
-| Barker Wealth | `f3490709-1a34-4efe-a3ad-4af64881dd98` |
-| Canaccord Perth | `b9f14ca7-36d8-436c-a9f8-c0223f2a94e9` |
-| Canaccord Brisbane | `4acc60a8-9914-4455-9a92-1d704f20f923` |
-| Life Unshackled | `6414a789-052f-472a-97c7-9475b7ac3cb8` |
-| MPC Markets | `71699cf3-e817-4bd7-b729-4d36bfa40d93` |
-| Avant Capital | `418bc312-fde5-4ef0-ac45-03383b09ede3` |
-| Harbour Bridge Capital | `0fce1ca7-71c1-4f9c-ab99-258a1e846874` |
-| Boston Global Wealth | `1f7f0c54-7a5d-41ce-ba56-589cc9a42b73` |
-| Sherpa Financial | `0d18e347-c793-45e5-be5c-65ef79ab9c73` |
-| RiverX | `002f0de1-a216-4d0d-9acf-f6c16f0715d9` |
+| Adviser Group (Airtable) | Xero Contact Name | Xero Contact ID |
+|---|---|---|
+| Gloryhouse | GloryHouse Wealth Management | `46b4c223-4238-41ed-b3c0-634195d5f9a0` |
+| Solomons | Solomons Wealth Management Australian Pty Ltd | `d3511d0e-9392-41c7-8186-156ca6acd0e2` |
+| Canaccord | TBD — individual adviser contacts (see PENDING #9) | — |
 
 ---
 
@@ -315,14 +308,14 @@ Product codes follow this format:
 ### 6.3 Contact Prefix Mapping
 
 ```
-Mapping:
+Mapping (Airtable prefix → Xero contact name):
 BNP   → BNP Paribas
-CG    → Citigroup
+CG    → Citi Group        ← Note: "Citi Group" (two words) in Stropro Xero
 MF    → Marex Financial
 BARC  → Barclays
 NOMU  → Nomura
 NX    → Natixis
-MBL   → Macquarie Bank
+MBL   → Macquarie Bank Limited
 ```
 
 ### 6.4 Step-by-Step Claude Workflow
@@ -571,24 +564,24 @@ SyntaxError: Unexpected non-whitespace character after JSON at position 449
 | Sales Table ID | `tblDF2DwnJecCmvE2` |
 | AdviserFees Table ID | `tblnoxmwS2YM3Erjq` |
 
-### Key Xero IDs — Accounts
+### Key Xero IDs — Accounts (Production)
 | Code | Name | ID |
 |---|---|---|
-| 201 | Distribution Fees - Advisory (Invoices) | `44accb59-40c5-4dcc-b7e1-359fb21eb3c3` |
-| 310 | Referral Fees - Distribution fees (RCTIs) | `078b095c-7e80-4887-9712-1d3721dfffcf` |
+| 200 | Distribution fees - Advisory (Invoices) | `7797b245-d6a9-4638-aa9f-c292455333f7` |
+| 310 | Referral Fees - Distribution fees (RCTIs) | `b0f93463-fddf-41d7-a730-f55d97bdd98d` |
 
-### Key Xero IDs — Issuer Bank Contacts (for Invoices)
-| Prefix | Name | Contact ID |
+### Key Xero IDs — Issuer Bank Contacts (Production)
+| Prefix | Xero Name | Contact ID |
 |---|---|---|
-| BNP | BNP Paribas | `cab01bf8-994a-476b-84e8-40e2ceecae92` |
-| CG | Citigroup | `b2cc653e-9523-4215-bb6f-87f86d983728` |
-| MF | Marex Financial | `374d776e-5992-43fb-ab2b-672b213feac3` |
-| BARC | Barclays | `af46e4b2-7070-46fb-8e92-14917149bf3b` |
-| NOMU | Nomura | `496b431f-ae61-4a9e-a118-f76ff81b9b09` |
-| NX | Natixis | `b27ed1ba-56e2-44f4-892e-6182f25992cf` |
-| MBL | Macquarie Bank | `7cd46512-594f-4f17-bc3d-fe7d04204024` |
+| BARC | Barclays | `bc6678bd-156e-4e42-8608-b82d0b9248d4` |
+| BNP | BNP Paribas | `1d4c50e0-88fd-42d3-b798-17693a587b15` |
+| CG | Citi Group | `04ac1d3e-9f3f-4732-beba-bf6e0e862039` |
+| MF | Marex Financial | `60465ff7-de0a-4e11-834b-345ef63fb83f` |
+| NX | Natixis | `639522f0-204a-4251-84a2-e2d7dcc3c157` |
+| NOMU | Nomura | `ee861c34-1069-4150-b128-7c41fc480f55` |
+| MBL | Macquarie Bank Limited | `caec487e-9ea8-43fb-8570-a79159f85633` |
 
-### Key Xero IDs — Adviser Group Contacts (for RCTIs)
+### Key Xero IDs — Adviser Group Contacts (Production)
 See Section 5.6 for full list.
 
 ---
