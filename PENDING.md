@@ -23,6 +23,11 @@ Tested 2026-05-10. BARC 2026-04-3 created in USD correctly. BARC 2026-04-2 creat
 
 ## Future Features
 
+### 9. Settlement Party Adv logic for RCTIs
+The AdviserFees table has a `Settlement Party Adv` field (`fld4pYt0Ximcc9Y3z`, singleSelect) with values: **Stropro**, **Mason Stevens**, **NetWealth**, **Praemium**. This tracks which platform/custodian is settling the trade. Logic to be defined — will likely affect RCTI contact, GST treatment, or routing. User to provide rules when ready.
+
+
+
 ### 6. Invoice reconciliation workflow
 For a given month (e.g. April 2026), compare all products in Airtable against invoices in Xero and produce a match/mismatch report showing: expected amount vs actual amount, currency, status, and missing invoices.
 
@@ -34,5 +39,11 @@ For a given month (e.g. April 2026), compare all products in Airtable against in
 After the invoice workflow is stable, apply the same pattern to build a Purchase Orders automation pulling from the same Airtable base.
 See `xero-mcp-workflow.md` Section 8 for reference.
 
-### 8. Rebuild for production Xero org
-Everything is currently configured against Demo Company (AU). When ready to go live, new Xero org ID, contact IDs, and account IDs will need to be mapped.
+### 8. Migrate to Stropro production Xero org
+Custom Connection subscription ($10 AUD/month) to be purchased. Steps once ready:
+1. Create Custom Connection app in Xero Developer Portal under Stropro org
+2. Update `Client ID` and `Client Secret` in `.mcp.json` and `claude_desktop_config.json`
+3. Run `list-contacts` → map real contact IDs for all issuer banks (Barclays, Citigroup, MBL, etc.)
+4. Run `list-accounts` → confirm accounts 201 and 310 exist, get real IDs
+5. Run `list-branding-themes` → confirm RCTI theme exists (or create it)
+6. Update Section 5 and Section 10 of `xero-mcp-workflow.md` with real IDs
