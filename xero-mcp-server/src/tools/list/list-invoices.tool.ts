@@ -20,9 +20,12 @@ const ListInvoicesTool = CreateXeroTool(
       .optional()
       .describe("If provided, invoice line items will also be returned"),
     reference: z.string().optional().describe("Filter by exact reference (e.g. product code 'CG 2026-04-1'). Uses Xero server-side filtering — fast and accurate."),
+    dateFrom: z.string().optional().describe("Filter invoices from this date inclusive (YYYY-MM-DD). Use with dateTo to fetch a full month e.g. 2026-04-01."),
+    dateTo: z.string().optional().describe("Filter invoices up to but not including this date (YYYY-MM-DD). e.g. 2026-05-01 for all of April."),
+    type: z.string().optional().describe("Filter by invoice type: ACCREC (sales invoices) or ACCPAY (bills)."),
   },
-  async ({ page, contactIds, invoiceNumbers, reference }) => {
-    const response = await listXeroInvoices(page, contactIds, invoiceNumbers, reference);
+  async ({ page, contactIds, invoiceNumbers, reference, dateFrom, dateTo, type }) => {
+    const response = await listXeroInvoices(page, contactIds, invoiceNumbers, reference, dateFrom, dateTo, type);
     if (response.error !== null) {
       return {
         content: [

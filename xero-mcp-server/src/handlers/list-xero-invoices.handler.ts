@@ -9,26 +9,34 @@ async function getInvoices(
   contactIds: string[] | undefined,
   page: number,
   reference: string | undefined,
+  dateFrom: string | undefined,
+  dateTo: string | undefined,
+  type: string | undefined,
 ): Promise<Invoice[]> {
   await xeroClient.authenticate();
 
-  const where = reference ? `Reference=="${reference}"` : undefined;
+  const whereParts: string[] = [];
+  if (reference) whereParts.push(`Reference=="${reference}"`);
+  if (dateFrom) whereParts.push(`Date>=DateTime(${dateFrom.replace(/-/g, ",")})`);
+  if (dateTo) whereParts.push(`Date<DateTime(${dateTo.replace(/-/g, ",")})`);
+  if (type) whereParts.push(`Type=="${type}"`);
+  const where = whereParts.length > 0 ? whereParts.join("&&") : undefined;
 
   const invoices = await xeroClient.accountingApi.getInvoices(
     xeroClient.tenantId,
     undefined, // ifModifiedSince
-    where, // where
-    "UpdatedDateUTC DESC", // order
+    where,
+    "Date ASC", // order
     undefined, // iDs
-    invoiceNumbers, // invoiceNumbers
-    contactIds, // contactIDs
+    invoiceNumbers,
+    contactIds,
     undefined, // statuses
     page,
     false, // includeArchived
     false, // createdByMyApp
     undefined, // unitdp
     false, // summaryOnly
-    100, // pageSize — increased from 10
+    100, // pageSize
     undefined, // searchTerm
     getClientHeaders(),
   );
@@ -36,16 +44,19 @@ async function getInvoices(
 }
 
 /**
- * List all invoices from Xero, optionally filtered by reference
+ * List invoices from Xero with optional filters: reference, date range, type
  */
 export async function listXeroInvoices(
   page: number = 1,
   contactIds?: string[],
   invoiceNumbers?: string[],
   reference?: string,
+  dateFrom?: string,
+  dateTo?: string,
+  type?: string,
 ): Promise<XeroClientResponse<Invoice[]>> {
   try {
-    const invoices = await getInvoices(invoiceNumbers, contactIds, page, reference);
+    const invoices = await getInvoices(invoiceNumbers, contactIds, page, reference, dateFrom, dateTo, type);
 
     return {
       result: invoices,
