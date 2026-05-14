@@ -26,27 +26,43 @@ User says: _"Reconcile April 2026"_ or _"Have we done all invoices and RCTIs for
 Instead:
 
 ### Step 1 — Get all products for the period from Airtable
-- Query Products table filtered by month/year (e.g. Code contains `2026-04-`)
-- Gets: Code, Strike Date, Currency per product
-- Result: list of ~50 product codes
+- Query Products table (`tblbqpCqSdBvxqc6T`) filtered by **Strike Date** range using server-side date operators
+- Filter format (confirmed working):
+  ```json
+  {
+    "operator": "and",
+    "operands": [
+      {"operator": ">=", "operands": ["fldRmizE67tvwOTc6", {"mode": "exactDate", "exactDate": "2026-04-01", "timeZone": "Australia/Sydney"}]},
+      {"operator": "<",  "operands": ["fldRmizE67tvwOTc6", {"mode": "exactDate", "exactDate": "2026-05-01", "timeZone": "Australia/Sydney"}]}
+    ]
+  }
+  ```
+- Fields to fetch: Code (`fldGwppKvbYFiTAsa`), Strike Date (`fldRmizE67tvwOTc6`), Currency (`fldUNJ9HydcFWOUPY`)
+- Result: list of ~55 products for the month, saved to file
+- **Do NOT filter by product code string** — use Strike Date field, it is the authoritative date
 
 ### Step 2 — Fetch ALL invoices for the period from Xero in one call
 - Call `list-invoices` with `dateFrom=2026-04-01`, `dateTo=2026-05-01`, `type=ACCREC`
-- Result saved to file (large) — process with Node.js locally
-- Build a set of all references found in Xero
+- Uses server-side `where` clause in the Xero API — fast, returns only relevant invoices
+- Result saved to file — process with Node.js locally
+- Build a lookup: `{ [reference]: invoiceNumber }` for all non-DELETED invoices
 
 ### Step 3 — Fetch ALL purchase orders from Xero in one call
-- Call `list-purchase-orders` with no filter (fetches all pages automatically)
+- Call `list-purchase-orders` with no filter (handler fetches all pages automatically)
 - Result saved to file — process with Node.js locally
-- Build a set of all references found (excluding DELETED)
+- Build a lookup: `{ [reference]: poNumber }` excluding DELETED status
 
 ### Step 4 — Cross-reference locally (Node.js, no API calls)
-For each of the ~50 products:
-- Invoice found in Step 2? → ✅ or ❌
-- RCTI found in Step 3? → ✅ or ❌ (note: Canaccord uses bulk reference, not product code)
+For each of the ~55 products from Step 1:
+- Look up product code in invoice lookup → ✅ found or ❌ missing
+- Look up product code in PO lookup → ✅ found or ❌ missing
+- Apply Canaccord special rule (see Section 5)
+- Detect flags: duplicates, unexpected statuses
 
-### Step 5 — Return summary table only
-Output only the final table to the context — not raw Xero data.
+### Step 5 — Return summary only (tiny context footprint)
+Output ONLY the final summary — never raw Xero data. Total context cost: ~30 lines.
+
+**Total API calls: 3** (1 Airtable + 1 Xero invoices + 1 Xero POs)
 
 ---
 
