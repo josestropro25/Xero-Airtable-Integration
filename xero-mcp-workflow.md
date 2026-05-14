@@ -253,11 +253,42 @@ The Sales `Product` lookup field stores values like `"CG 2026-03-1: 12M US Banks
 
 ### 5.6 Adviser Group Contacts (for RCTIs)
 
-| Adviser Group (Airtable) | Xero Contact Name | Xero Contact ID |
-|---|---|---|
-| Gloryhouse | GloryHouse Wealth Management | `46b4c223-4238-41ed-b3c0-634195d5f9a0` |
-| Solomons | Solomons Wealth Management Australian Pty Ltd | `d3511d0e-9392-41c7-8186-156ca6acd0e2` |
-| Canaccord | TBD — individual adviser contacts (see PENDING #9) | — |
+| Adviser Group (Airtable) | Xero Contact Name | Xero Contact ID | Notes |
+|---|---|---|---|
+| Gloryhouse | GloryHouse Wealth Management | `46b4c223-4238-41ed-b3c0-634195d5f9a0` | Adviser always = **Yan Hu** |
+| Solomons | Solomons Wealth Management Australian Pty Ltd | `d3511d0e-9392-41c7-8186-156ca6acd0e2` | |
+| Life Unshackled | LifeUnshackled | `b9f0ac6e-79b9-4c60-ba54-4edf7dfa2b27` | Oliver Lawton |
+| Canaccord | Canaccord Genuity Financial Limited - WIll Kenny | `fffe7d03-a05b-4daa-bbda-9749e37e26de` | **Bulk RCTI** pattern — see below |
+| PY Financial | PY Financial | `0af54d87-8b4d-43e3-8e4b-09031cc30e8f` | Philip Yap — NOMU products |
+| Harbour Bridge Capital | HARBOUR BRIDGE CAPITAL PTY LTD | `52b7b2e0-8f8c-496c-9f21-3686857abdcd` | All-caps in Xero |
+| Granite Bay | Granite Bay - Steven Moon | `4c2f4779-d43d-4f8a-a98f-28e5bae14d07` | Bulk FCN pattern |
+
+**Other Canaccord contacts (individual advisers):**
+| Contact Name | Xero Contact ID |
+|---|---|
+| Canaccord Genuity Financial Limited - Michael Willet | `865f7e3a-1211-4ae4-a514-451ece4b94d4` |
+| Canaccord Genuity Financial Limited - Tony Kinivan | `856f176c-b89b-4611-b753-a563255c1b7b` |
+| Canaccord Genuity Financial Limited - Michael Re | `6737580a-945b-4d37-b0fd-b96201a661cc` |
+
+### 5.7 Canaccord RCTI Pattern
+
+Canaccord RCTIs require a **case-by-case check before creating**. The pattern depends on the data:
+
+**Check the Canaccord sales rows first:**
+- If the **same adviser** has trades across **multiple consecutive products** (e.g. the same person appears in BARC 2026-04-3, 04-4, 04-5, 04-6) → create **one bulk RCTI** to `Canaccord Genuity Financial Limited - WIll Kenny` with reference like `"Stropro April FCNs"` covering all products
+- If it's a **single trade** or trades are spread across **different advisers** → assess individually
+
+**Never create the bulk RCTI automatically. Always detect and ask first:**
+
+> _"⚠️ I've detected [N] products under Canaccord in [Month]: [list]. Would you like a single bulk RCTI or individual ones?"_
+
+**Grouping condition:** Same Canaccord adviser group + same month by **strike date** (not creation date).
+
+Individual Canaccord contacts in Xero (for reference):
+- WIll Kenny (bulk RCTI contact): `fffe7d03-a05b-4daa-bbda-9749e37e26de`
+- Michael Willet: `865f7e3a-1211-4ae4-a514-451ece4b94d4`
+- Tony Kinivan: `856f176c-b89b-4611-b753-a563255c1b7b`
+- Michael Re: `6737580a-945b-4d37-b0fd-b96201a661cc`
 
 ---
 
@@ -342,14 +373,33 @@ A single invoice can cover multiple products (one line item per product). This i
 - Each product = one line item: `Distribution Fees -- {code}`, amount = SUM × Upfront%
 - Use when the user says "create one invoice for these products"
 
+### 6.5 Data Consistency Checks
+
+Before creating an invoice, flag any of the following anomalies to the user — do not block creation, just report:
+
+- **Upfront %** is not a round number (e.g. `1.40518%` instead of `1.4%`) — may indicate a data entry error in Airtable
+- **Sales SUM is zero** — no sales rows found for the product
+- **Strike Date** is in the future or more than 6 months in the past
+- **Currency mismatch** — product currency doesn't match the expected issuer currency
+- **FX Rate = 1** for a USD product — likely not yet set in Airtable, ask user for real rate
+
+Report as: _"⚠️ Flag: [field] value is [value] — please confirm before finalising."_
+
 ### 6.6 Result Summary Format
 
 Always report results in this format — **net amount only**, no GST-inclusive totals:
 
-| # | Reference | Contact | Net | Tax |
-|---|---|---|---|---|
-| Invoice | BARC 2026-04-2 | Barclays | $5,300 | No Tax |
-| RCTI PO-0028 | BARC 2026-04-3/4/5/6 | Canaccord Brisbane | $12,703 | Exclusive |
+**Invoices:**
+
+| Invoice | Contact | Net | Strike Date | Tax | Status |
+|---|---|---|---|---|---|
+| BARC 2026-04-2 | Barclays | $5,300 | 2026-04-28 | No Tax | DRAFT |
+
+**RCTIs:**
+
+| PO | Reference | Contact | Net | Strike Date | Tax | Status |
+|---|---|---|---|---|---|---|
+| PO-0028 | BARC 2026-04-3/4/5/6 | Canaccord Brisbane | $12,703 | 2026-04-28 | Exclusive | Submitted |
 
 **Tax column values:** `No Tax`, `Exclusive`, `Inclusive`
 

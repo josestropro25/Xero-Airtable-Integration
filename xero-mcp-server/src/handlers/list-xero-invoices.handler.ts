@@ -8,13 +8,16 @@ async function getInvoices(
   invoiceNumbers: string[] | undefined,
   contactIds: string[] | undefined,
   page: number,
+  reference: string | undefined,
 ): Promise<Invoice[]> {
   await xeroClient.authenticate();
+
+  const where = reference ? `Reference=="${reference}"` : undefined;
 
   const invoices = await xeroClient.accountingApi.getInvoices(
     xeroClient.tenantId,
     undefined, // ifModifiedSince
-    undefined, // where
+    where, // where
     "UpdatedDateUTC DESC", // order
     undefined, // iDs
     invoiceNumbers, // invoiceNumbers
@@ -25,7 +28,7 @@ async function getInvoices(
     false, // createdByMyApp
     undefined, // unitdp
     false, // summaryOnly
-    10, // pageSize
+    100, // pageSize — increased from 10
     undefined, // searchTerm
     getClientHeaders(),
   );
@@ -33,15 +36,16 @@ async function getInvoices(
 }
 
 /**
- * List all invoices from Xero
+ * List all invoices from Xero, optionally filtered by reference
  */
 export async function listXeroInvoices(
   page: number = 1,
   contactIds?: string[],
   invoiceNumbers?: string[],
+  reference?: string,
 ): Promise<XeroClientResponse<Invoice[]>> {
   try {
-    const invoices = await getInvoices(invoiceNumbers, contactIds, page);
+    const invoices = await getInvoices(invoiceNumbers, contactIds, page, reference);
 
     return {
       result: invoices,

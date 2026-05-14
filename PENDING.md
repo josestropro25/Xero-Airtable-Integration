@@ -23,8 +23,16 @@ Tested 2026-05-10. BARC 2026-04-3 created in USD correctly. BARC 2026-04-2 creat
 
 ## Future Features
 
-### 9. Canaccord RCTI contact mapping
-In the real Stropro Xero org, Canaccord does not have a single group contact. Instead there are individual adviser contacts (e.g. "Canaccord Genuity Financial Limited - Michael Willet"). Need to clarify: do RCTIs go to individual adviser contacts, or should a single Canaccord group contact be created? Logic to be defined before Canaccord RCTIs can be created in production.
+### 9. CG 2026-05-6 RCTI — new adviser groups + flow TBD
+Three adviser groups found with no Xero contacts and no defined RCTI flow yet. User to clarify process before creating:
+- **Pridham Capital** — Roger Geoffrey Pridham, $20,000 @ 1.00% = $200
+- **Taylor Collinson** — Stephen Spencer (⚠️ leading tab in Airtable name), $25,000 @ 1.40% = $350
+- **Bayside Asset Management** — Matt Maher, $40,000 @ 1.40% = $560
+
+Also flag: Self-Directed row ($50,000) is included in invoice but has no RCTI — expected behaviour confirmed.
+
+### ~~10. Canaccord RCTI contact mapping~~ ✓ DONE
+Canaccord uses a **bulk RCTI** pattern: one PO per month to `Canaccord Genuity Financial Limited - WIll Kenny` (`fffe7d03`) with reference `"Stropro [Month] FCNs"`. Individual product POs are deleted when consolidated. Individual adviser contacts exist (Willet, Kinivan, Re) but are not used for RCTIs.
 
 ### ~~10. Invoice branding theme for production~~ ✓ DONE
 Invoices → Standard (`68901f31-8c32-40ae-b1bd-5fe9caaaabc9`). RCTIs → RCTI (`05148358-30af-46a9-97f3-26e3ad572273`).

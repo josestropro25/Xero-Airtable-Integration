@@ -19,9 +19,10 @@ const ListInvoicesTool = CreateXeroTool(
       .array(z.string())
       .optional()
       .describe("If provided, invoice line items will also be returned"),
+    reference: z.string().optional().describe("Filter by exact reference (e.g. product code 'CG 2026-04-1'). Uses Xero server-side filtering — fast and accurate."),
   },
-  async ({ page, contactIds, invoiceNumbers }) => {
-    const response = await listXeroInvoices(page, contactIds, invoiceNumbers);
+  async ({ page, contactIds, invoiceNumbers, reference }) => {
+    const response = await listXeroInvoices(page, contactIds, invoiceNumbers, reference);
     if (response.error !== null) {
       return {
         content: [
