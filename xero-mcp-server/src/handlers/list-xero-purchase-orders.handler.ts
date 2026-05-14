@@ -38,7 +38,7 @@ export async function listXeroPurchaseOrders(
 
     if (reference) {
       allOrders = allOrders.filter(o =>
-        o.reference?.toLowerCase().includes(reference.toLowerCase())
+        o.reference?.toLowerCase() === reference.toLowerCase()
       );
     }
 

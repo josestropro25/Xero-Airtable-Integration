@@ -11,7 +11,7 @@ const ListPurchaseOrdersTool = CreateXeroTool(
     page: z.number().describe("Page number for pagination. Defaults to 1.").optional(),
   },
   async ({ reference, contactId, page }) => {
-    const result = await listXeroPurchaseOrders(reference, contactId, page ?? 1);
+    const result = await listXeroPurchaseOrders(reference, contactId, page);
 
     if (result.isError) {
       return {
