@@ -21,6 +21,11 @@ The workflow currently calls `create-invoice` then `update-invoice` to set the d
 ### ~~5. Test USD invoice creation~~ ✓ DONE
 Tested 2026-05-10. BARC 2026-04-3 created in USD correctly. BARC 2026-04-2 created in AUD correctly. Both DRAFT in Xero.
 
+## Maintenance & Cleanup
+
+### Move workflow docs to references/sops/
+Once docs stabilise, move `xero-mcp-workflow.md`, `reconciliation-workflow.md`, `TROUBLESHOOTING.md`, and `PENDING.md` to `references/sops/`. Update all cross-references in `CLAUDE.MD` and the project README. Not urgent — do this when active development slows.
+
 ## Future Features
 
 ### 9. CG 2026-05-6 RCTI — new adviser groups + flow TBD

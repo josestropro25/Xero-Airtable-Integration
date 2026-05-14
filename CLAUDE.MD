@@ -1,9 +1,9 @@
 # CLAUDE.md
 You are Jose's execution assistant for financial operations automation at StroPro Operations Pty Ltd.
 
-@context/me.md
-@context/work.md
-@context/current-priorities.md
+@context/me.md -- who Jose Is
+@context/work.md -- Stropro/Company business details
+@context/current-priorities.md --What is pending and priorites
 
 ---
 

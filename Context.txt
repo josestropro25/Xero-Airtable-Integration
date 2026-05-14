@@ -1,0 +1,81 @@
+# Structured Products Fintech – Agent Context (Australia)
+
+IMPORTANT WORKING STYLE
+- Be critical and professional.
+- Do not assume my ideas are optimal.
+- If something is weak in architecture, maintainability, reliability, controls, or security, say so clearly and explain why.
+
+
+## 1. Domain overview
+
+The business is an intermediary between financial advisers (servicing high-net-worth clients) and banks that issue structured investment products. It operates in AUD and USD and manages the full lifecycle of products: structuring, client subscriptions (“trades”), funding, settlement, ongoing coupons, maturities, and reconciliation.
+
+## 2. Core entities
+
+### 2.1 Advisors & client accounts
+- Advisors create and manage multiple client accounts in the platform.
+- Client accounts are used to subscribe into products.
+
+### 2.2 Products
+- Each product has:
+  - **Internal Product Name** (used operationally and in reporting)
+  - **ISIN** (used by issuing banks and market infrastructure)
+  - Other metadata such as issue date, currency, and total target size.
+- A product is funded via one or more client trades.
+
+### 2.3 Trades
+- A **trade** = one client account subscribing an amount into a specific product.
+- Key fields:
+  - Client account
+  - Trade amount (AUD or USD)
+  - System-generated **Trade Number** (e.g. `T00001`, `T16121`).
+- One product can have many trades; one advisor can submit many trades into the same product.
+
+## 3. Funding flow
+
+- Clients (or advisors) transfer money to the company’s bank account to fund trades.
+- **Primary identifier for funding:** Trade Number, typically referenced as `"T" + number` (e.g. `T16121`) in the bank transaction description.
+- Missing or incorrect trade references create exceptions that require manual matching.
+
+### 3.1 Product funding status
+
+For each product, the system tracks:
+- Expected trades (by Trade Number and amount)
+- Total product target amount
+
+As deposits are matched to trade numbers:
+- The count of funded trades increases.
+- The total received amount for the product increases.
+
+A product is considered **fully funded** when all trades are funded and the product’s target amount is received.
+
+## 4. Settlement
+
+Once a product is fully funded, operations “settle” it by:
+
+1. Sending principal to a **settlement account** (e.g. Clearstream).
+2. Sending revenue (fees/margin) to a **revenue account**.
+
+Typical bank transaction patterns (referencing product name):
+- Principal transfer: description like `"MS 2026-02-1"`
+- Revenue transfer: description like `"MS 2026-02-1 - REV"`
+
+After these movements, the initial purchase lifecycle for that product is complete.
+
+## 5. Ongoing cashflows: distributions & maturities
+
+### 5.1 Distributions (coupons)
+- Periodic payments from issuing banks.
+- Identified and referenced primarily by **ISIN**, not by internal product name.
+- Often received as a **single aggregated credit** (e.g. “CPNs”) that corresponds to multiple products/ISINs.
+- Operations use issuer portals to:
+  - Break down the aggregate amount into ISIN-level lines.
+  - Record these breakdown lines internally.
+  - Later allocate/payout these amounts to client accounts.
+
+### 5.2 Maturities (principal repayments)
+- Return of principal at scheduled maturity or in case of early termination.
+- Also identified primarily by **ISIN**.
+- May arrive as single or aggregated payments and must be split internally by ISIN, then allocated to products and client accounts.
+
+

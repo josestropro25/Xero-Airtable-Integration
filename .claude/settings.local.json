@@ -25,7 +25,9 @@
       "mcp__xero__list-accounts",
       "mcp__xero__list-contacts",
       "mcp__xero__list-invoices",
-      "mcp__xero__list-purchase-orders"
+      "mcp__xero__list-purchase-orders",
+      "Bash(mkdir -p .claude/skills archives references/sops references/examples projects/xero-airtable-automation)",
+      "Bash(touch .claude/skills/.gitkeep archives/.gitkeep references/sops/.gitkeep references/examples/.gitkeep)"
     ],
     "additionalDirectories": [
       "C:\\Users\\Jose De la Hoz\\Desktop\\Repositories\\Xero-Airtable-Integration\\xero-mcp-server\\.git",
