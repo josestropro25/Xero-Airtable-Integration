@@ -27,7 +27,9 @@
       "mcp__xero__list-invoices",
       "mcp__xero__list-purchase-orders",
       "Bash(mkdir -p .claude/skills archives references/sops references/examples projects/xero-airtable-automation)",
-      "Bash(touch .claude/skills/.gitkeep archives/.gitkeep references/sops/.gitkeep references/examples/.gitkeep)"
+      "Bash(touch .claude/skills/.gitkeep archives/.gitkeep references/sops/.gitkeep references/examples/.gitkeep)",
+      "Bash(node \"c:/Users/Jose De la Hoz/Desktop/Repositories/Xero-Airtable-Integration/scripts/reconcile.js\" \"c:/Users/Jose De la Hoz/Desktop/Repositories/Xero-Airtable-Integration/scripts/temp/products_apr2026.json\" \"C:/Users/Jose De la Hoz/.claude/projects/c--Users-Jose-De-la-Hoz-Desktop-Repositories-Xero-Airtable-Integration/afce3c7c-8a23-49cb-aa47-bda5d365133e/tool-results/mcp-xero-list-purchase-orders-1778800954283.txt\" \"c:/Users/Jose De la Hoz/Desktop/Repositories/Xero-Airtable-Integration/scripts/temp/invoices_apr2026.txt\")",
+      "mcp__claude_ai_Airtable__list_tables_for_base"
     ],
     "additionalDirectories": [
       "C:\\Users\\Jose De la Hoz\\Desktop\\Repositories\\Xero-Airtable-Integration\\xero-mcp-server\\.git",

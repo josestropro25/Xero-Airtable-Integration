@@ -39,6 +39,7 @@ for (const line of invoicesText.split('\n')) {
   if (parts.length < 3 || parts[0] === 'Reference' || parts[0].startsWith('Found')) continue;
   const [ref, number, status] = parts;
   if (!ref || ref === '(no ref)') continue;
+  if (status === 'DELETED') continue;
   if (!invoiceMap[ref]) invoiceMap[ref] = [];
   invoiceMap[ref].push({ number, status });
 }
@@ -89,8 +90,10 @@ const monthNames = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct',
 for (const product of products) {
   const { code, strikeDate, currency } = product;
 
-  // Invoice check
-  const invs = invoiceMap[code] ?? [];
+  // Invoice check — match exact OR reference starts with code + space (Xero refs often have suffixes like " NW", " MS")
+  const invs = Object.entries(invoiceMap)
+    .filter(([ref]) => ref === code || ref.startsWith(code + ' '))
+    .flatMap(([, entries]) => entries);
   let invoiceStatus = '❌ Missing';
   if (invs.length === 1) {
     invoiceStatus = `✅ ${invs[0].number}`;
