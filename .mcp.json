@@ -6,9 +6,9 @@
         "C:/Users/Jose De la Hoz/Desktop/Repositories/Xero-Airtable-Integration/xero-mcp-server/dist/index.js"
       ],
       "env": {
-        "XERO_CLIENT_ID": "70D9CF57F37244A6924FB8A5E1472885",
-        "XERO_CLIENT_SECRET": "nSw3wxIf1X3HjRomtcRapQJh3JCmNxqApuw6gM64xNkGIawl",
-        "XERO_SCOPES": "accounting.invoices accounting.payments accounting.banktransactions accounting.manualjournals accounting.contacts accounting.settings payroll.employees payroll.timesheets payroll.settings"
+        "XERO_CLIENT_ID": "84A61E73898E4D49A0B8D2B5C91859A4",
+        "XERO_CLIENT_SECRET": "ktAzTMGZ_AHLilMxRkNig6oAtYxmyEp9VQyIpnT6YOIrNzSa",
+        "XERO_SCOPES": "accounting.invoices accounting.contacts accounting.contacts.read accounting.settings.read accounting.payments"
       }
     }
   }
