@@ -42,10 +42,10 @@ Instead:
 - **Do NOT filter by product code string** — use Strike Date field, it is the authoritative date
 
 ### Step 2 — Fetch ALL invoices for the period from Xero in one call
-- Call `list-invoices` with `dateFrom=2026-04-01`, `dateTo=2026-05-01`, `type=ACCREC`
-- Uses server-side `where` clause in the Xero API — fast, returns only relevant invoices
-- Result saved to file — process with Node.js locally
-- Build a lookup: `{ [reference]: invoiceNumber }` for all non-DELETED invoices
+- Call `list-invoices` with `dateFrom=2026-04-01`, `dateTo=2026-05-01`, `type=ACCREC`, **`compact=true`**
+- `compact=true` returns only `Reference | InvoiceNumber | Status | Currency | Net` per line (~5 tokens per invoice vs ~200 verbose)
+- Result goes into context (~300 tokens for 70 invoices) — acceptable
+- Save this output to a text file for the Node.js script
 
 ### Step 3 — Fetch ALL purchase orders from Xero in one call
 - Call `list-purchase-orders` with no filter (handler fetches all pages automatically)
@@ -53,16 +53,20 @@ Instead:
 - Build a lookup: `{ [reference]: poNumber }` excluding DELETED status
 
 ### Step 4 — Cross-reference locally (Node.js, no API calls)
-For each of the ~55 products from Step 1:
-- Look up product code in invoice lookup → ✅ found or ❌ missing
-- Look up product code in PO lookup → ✅ found or ❌ missing
-- Apply Canaccord special rule (see Section 5)
-- Detect flags: duplicates, unexpected statuses
+```bash
+node scripts/reconcile.js <products_file> <pos_file> <invoices_file>
+```
+- Reads Airtable products file (JSON) and PO file (text) from disk
+- Reads compact invoice file (text) from disk
+- For each product: checks invoice lookup and PO lookup by exact reference
+- Applies Canaccord bulk PO rule (matches "Stropro [Month] FCNs" pattern)
+- Detects flags: duplicate invoices, etc.
 
 ### Step 5 — Return summary only (tiny context footprint)
-Output ONLY the final summary — never raw Xero data. Total context cost: ~30 lines.
+Paste the Node.js output into the conversation. Total context cost: ~50 lines.
 
-**Total API calls: 3** (1 Airtable + 1 Xero invoices + 1 Xero POs)
+**Total API calls: 3** (1 Airtable + 1 Xero invoices compact + 1 Xero POs)
+**Script:** `scripts/reconcile.js`
 
 ---
 

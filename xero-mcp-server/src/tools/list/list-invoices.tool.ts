@@ -23,8 +23,9 @@ const ListInvoicesTool = CreateXeroTool(
     dateFrom: z.string().optional().describe("Filter invoices from this date inclusive (YYYY-MM-DD). Use with dateTo to fetch a full month e.g. 2026-04-01."),
     dateTo: z.string().optional().describe("Filter invoices up to but not including this date (YYYY-MM-DD). e.g. 2026-05-01 for all of April."),
     type: z.string().optional().describe("Filter by invoice type: ACCREC (sales invoices) or ACCPAY (bills)."),
+    compact: z.boolean().optional().describe("When true, returns only Reference | InvoiceNumber | Status per line. Use for reconciliation to minimise token usage."),
   },
-  async ({ page, contactIds, invoiceNumbers, reference, dateFrom, dateTo, type }) => {
+  async ({ page, contactIds, invoiceNumbers, reference, dateFrom, dateTo, type, compact }) => {
     const response = await listXeroInvoices(page, contactIds, invoiceNumbers, reference, dateFrom, dateTo, type);
     if (response.error !== null) {
       return {
@@ -39,6 +40,19 @@ const ListInvoicesTool = CreateXeroTool(
 
     const invoices = response.result;
     const returnLineItems = (invoiceNumbers?.length ?? 0) > 0;
+
+    // Compact mode — for reconciliation, returns only what's needed
+    if (compact) {
+      const lines = (invoices ?? []).map(inv =>
+        `${inv.reference ?? "(no ref)"} | ${inv.invoiceNumber ?? "-"} | ${inv.status ?? "-"} | ${inv.currencyCode ?? "AUD"} | ${inv.subTotal ?? 0}`
+      );
+      return {
+        content: [{
+          type: "text" as const,
+          text: `Found ${lines.length} invoices (compact):\nReference | InvoiceNumber | Status | Currency | Net\n${lines.join("\n")}`,
+        }],
+      };
+    }
 
     return {
       content: [
