@@ -49,9 +49,7 @@ Suffix rule documented in `reconcile.js`, `xero-airtable-rules.md`, and `xero-mc
 - Stropro / blank → no suffix; account 201; single-line description
 - RCTI reference never gets a suffix regardless of settlement party
 
-**Invoice creation workflow: ✅ done** — Section 6.1b in `xero-mcp-workflow.md`
-
-**Still pending:** external RCTI creation workflow — does the RCTI spec change for MS/NW products beyond what's already documented?
+**✅ Fully done.** Invoice spec: Section 6.1b in `xero-mcp-workflow.md`. RCTI spec: identical to internal — settlement party has no effect on RCTIs.
 
 
 

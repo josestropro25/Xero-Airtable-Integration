@@ -12,13 +12,13 @@
 
 ## Near-term
 
-3. **Settlement Party Adv — external RCTI creation** — external invoice spec done (Section 6.1b in `xero-mcp-workflow.md`): suffix on reference, account 310, 3-line description with ISIN. Still need to document the external RCTI creation spec.
+3. **C2 and JPM prefix mapping** — unknown issuers, no Xero contacts yet. Needed before invoices for those products can be created.
 
 4. **CG 2026-05-6 RCTI** — new adviser groups (Pridham Capital, Taylor Collinson, Bayside Asset Management) need Xero contacts created and flow clarified before RCTI can be created.
 
 ## Done (recently)
 
 - ✅ Reconciliation workflow — 3-call approach, `scripts/reconcile.js`, full SOP in `reconciliation-workflow.md`
-- ✅ Settlement Party Adv suffix mapping — documented in rules and reconciliation workflow
+- ✅ Settlement Party Adv — fully documented: suffix on invoice reference, account 310, 3-line description for external; RCTIs identical regardless of settlement party
 - ✅ Production Xero connection — live against real StroPro org
 - ✅ Canaccord bulk RCTI pattern — documented and detected by reconcile.js

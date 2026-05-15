@@ -477,6 +477,8 @@ Always report results in this format — **net amount only**, no GST-inclusive t
 
 Purchase orders are called **RCTIs** (Recipient-Created Tax Invoices). They represent the adviser fees paid out to each adviser group for their share of a product's sales.
 
+> **Settlement party has no effect on RCTIs.** Whether the invoice was internal (Stropro) or external (Mason Stevens / NetWealth), the RCTI spec is identical — same contact, same reference (no suffix), same account, same format.
+
 > **Language note:** The user refers to purchase orders as "RCTIs". Any of the following mean the same thing:
 > - _"Create the RCTI for BARC 2026-03-4"_
 > - _"Do the purchase orders for BARC 2026-03-4"_
