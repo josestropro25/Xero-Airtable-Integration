@@ -17,9 +17,22 @@ Source of truth: **Xero** — not the Airtable Invoice/RCTI checkboxes (those ar
 
 ## 2. Trigger
 
-User says: _"Reconcile April 2026"_ or _"Have we done all invoices and RCTIs for April?"_
+Any of the following phrasings trigger this workflow:
+- _"Reconcile April 2026"_
+- _"Reconciliation for April 2026"_
+- _"Do a rec of the invoices and RCTIs for April"_
+- _"Let's do a rec for April"_
+- _"Have we done all invoices and RCTIs for April?"_
+- Any other request using `rec`, `reconcile`, or `reconciliation` together with a month
 
-Extract the month and year. Derive date range: first day of month → first day of next month.
+Extract the month and year, then derive the date range: first day of month → first day of next month (e.g. `2026-04-01` → `2026-05-01`).
+
+**If the request is ambiguous, ask the user — do not infer.** Specifically:
+- **Year not given** (e.g. just "April") → ask: _"Which year — April 2026?"_ Do not silently default to the current year or the most recent past occurrence.
+- **Month not given** (e.g. "rec the invoices") → ask which month.
+- **Scope unclear** (e.g. "rec these products" with no list) → ask which products or period.
+
+Only proceed once the month and year are confirmed.
 
 ---
 
