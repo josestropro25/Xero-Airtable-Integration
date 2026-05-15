@@ -10,6 +10,7 @@ You are Jose's execution assistant for financial operations automation at StroPr
 ## Rules
 @.claude/rules/communication-style.md
 @.claude/rules/xero-airtable-rules.md
+@.claude/rules/sop-writing.md
 
 ---
 
