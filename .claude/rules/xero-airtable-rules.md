@@ -32,7 +32,7 @@ Invoices and RCTIs are either **internal** (Settlement Party Adv = Stropro) or *
 |---|---|---|---|
 | Reference suffix | none | ` MS` | ` NW` |
 | Invoice description | `Distribution Fees -- {code}` | 3-line: code / ISIN / `amount @ upfront%` | same as MS |
-| Invoice account | `201 - Distribution Fees - Advisory` | `310 - Adviser Fees` | `310 - Adviser Fees` |
+| Invoice account | `200 - Distribution Fees - Advisory` | `310 - Adviser Fees` | `310 - Adviser Fees` |
 | RCTI contact | Adviser group | Adviser group | Adviser group |
 | RCTI reference | `product.Code` | `product.Code` | `product.Code` |
 
@@ -55,6 +55,16 @@ When checking, search by product code prefix: an existing `CG 2026-04-6 NW` coun
 ## RCTI exceptions — skip and notify
 - Adviser Group = "Cindi Mao" → no RCTI
 - Adviser Group = "Self-directed" / "Self Directed" → no RCTI
+
+## RCTI tax exceptions by adviser group
+Default RCTI tax: GST on Expenses (`INPUT`, 10%, `lineAmountTypes: EXCLUSIVE`).
+Exceptions:
+- Adviser Group = "Solomons" → BAS Excluded (`taxType: BASEXCLUDED`, `lineAmountTypes: NOTAX`) — no GST charged
+
+## External invoice branding theme
+- External invoice, AUD currency → Standard branding theme (`68901f31-8c32-40ae-b1bd-5fe9caaaabc9`)
+- External invoice, USD currency → Stropr Ops USD - Revenue (`e0ad3aaa-50bc-468e-a117-b719b6dd5ed5`)
+- Internal invoice → Standard branding theme (`68901f31-8c32-40ae-b1bd-5fe9caaaabc9`)
 
 ## Gloryhouse adviser name
 Always use "Yan Hu" for Gloryhouse, even if the Airtable Adviser field is blank.

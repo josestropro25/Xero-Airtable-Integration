@@ -242,21 +242,22 @@ The Sales `Product` lookup field stores values like `"CG 2026-03-1: 12M US Banks
 
 | Name | ID | Used For |
 |---|---|---|
-| **Standard** | `68901f31-8c32-40ae-b1bd-5fe9caaaabc9` | All invoices ✅ |
-| **RCTI** | `05148358-30af-46a9-97f3-26e3ad572273` | All RCTIs ✅ |
+| **Standard** | `68901f31-8c32-40ae-b1bd-5fe9caaaabc9` | Internal invoices; external AUD invoices |
+| **RCTI** | `05148358-30af-46a9-97f3-26e3ad572273` | All RCTIs (note: API may not apply — see PENDING.md item 12) |
+| **Stropr Ops USD - Revenue** | `e0ad3aaa-50bc-468e-a117-b719b6dd5ed5` | External invoices in USD currency |
 | StroproOps AUD | `9bca9998-20c1-41e1-b69a-238b628a185c` | Not used |
-| Stropr Ops USD - Revenue | `e0ad3aaa-50bc-468e-a117-b719b6dd5ed5` | Not used |
 
 ### 5.5 Tax Rates
-- **Invoices:** GST Free Income — `EXEMPTOUTPUT` — 0%
-- **RCTIs:** GST on Expenses — `INPUT` — 10%
+- **Invoices:** GST Free Income — `NONE` — 0%
+- **RCTIs (default):** GST on Expenses — `INPUT` — 10% — `lineAmountTypes: EXCLUSIVE`
+- **RCTIs (Solomons):** BAS Excluded — `BASEXCLUDED` — 0% — `lineAmountTypes: NOTAX`
 
 ### 5.6 Adviser Group Contacts (for RCTIs)
 
 | Adviser Group (Airtable) | Xero Contact Name | Xero Contact ID | Notes |
 |---|---|---|---|
 | Gloryhouse | GloryHouse Wealth Management | `46b4c223-4238-41ed-b3c0-634195d5f9a0` | Adviser always = **Yan Hu** |
-| Solomons | Solomons Wealth Management Australian Pty Ltd | `d3511d0e-9392-41c7-8186-156ca6acd0e2` | |
+| Solomons | Solomons Wealth Management Australian Pty Ltd | `d3511d0e-9392-41c7-8186-156ca6acd0e2` | Tax: BAS Excluded (`BASEXCLUDED`, `NOTAX`) — no GST |
 | Life Unshackled | LifeUnshackled | `b9f0ac6e-79b9-4c60-ba54-4edf7dfa2b27` | Oliver Lawton |
 | Canaccord | Canaccord Genuity Financial Limited - WIll Kenny | `fffe7d03-a05b-4daa-bbda-9749e37e26de` | **Bulk RCTI** pattern — see below |
 | PY Financial | PY Financial | `0af54d87-8b4d-43e3-8e4b-09031cc30e8f` | Philip Yap — NOMU products |
@@ -321,8 +322,8 @@ Invoices are either **internal** or **external** depending on how the trade was 
 | Description | `Distribution Fees -- {product.Code}` | Calculated |
 | Qty | 1 | Fixed |
 | Price | `SUM(Amount[Cash]) × Upfront% / 100` | Calculated |
-| Account | `201 - Distribution Fees - Advisory` | Fixed |
-| Tax Rate | GST Free Income | Fixed |
+| Account | `200 - Distribution Fees - Advisory` | Fixed |
+| Tax Rate | GST Free Income (`NONE`) | Fixed |
 | Status | DRAFT | Fixed (review before approving) |
 
 ---
@@ -357,13 +358,14 @@ XS3361821740
 
 **Fields that differ from internal:**
 
-| Field | Internal | External |
-|---|---|---|
-| Reference | `product.Code` | `product.Code` + ` MS` or ` NW` |
-| Description | `Distribution Fees -- {product.Code}` | Multi-line format above |
-| Account | `201 - Distribution Fees - Advisory` | `310 - Adviser Fees` |
+| Field | Internal | External AUD | External USD |
+|---|---|---|---|
+| Reference | `product.Code` | `product.Code` + ` MS`/` NW` | `product.Code` + ` MS`/` NW` |
+| Description | `Distribution Fees -- {product.Code}` | Multi-line format above | Multi-line format above |
+| Account | `200 - Distribution Fees - Advisory` | `310 - Adviser Fees` | `310 - Adviser Fees` |
+| Branding Theme | Standard (`68901f31-8c32-40ae-b1bd-5fe9caaaabc9`) | Standard (`68901f31-8c32-40ae-b1bd-5fe9caaaabc9`) | Stropr Ops USD - Revenue (`e0ad3aaa-50bc-468e-a117-b719b6dd5ed5`) |
 
-Everything else (contact, date, branding, currency, tax, price calculation, status) is identical to the internal spec.
+Everything else (contact, date, currency, tax, price calculation, status) is identical to the internal spec.
 
 ### 6.2 Product Code Structure
 
@@ -504,6 +506,10 @@ Sales rows for a product are grouped by **Adviser Group**:
 - Adviser Group = `"Cindi Mao"` → skip, report: _"Skipped: Cindi Mao — no PO required"_
 - Adviser Group = `"Self-directed"` (shown as `"Self Directed"` in Airtable) → skip, report: _"Skipped: Self-directed sale — no PO required"_
 
+**Tax exceptions by contact:**
+- Adviser Group = `"Solomons"` → Tax: BAS Excluded (0%) — use `taxType: BASEXCLUDED`, `lineAmountTypes: NOTAX`
+  All other adviser groups use GST on Expenses (`INPUT`, 10%, `lineAmountTypes: EXCLUSIVE`)
+
 ### 7.3 Step-by-Step Claude Workflow
 
 **User says:** `"Create purchase orders for BARC 2026-03-4"`
@@ -544,27 +550,27 @@ Sales rows for a product are grouped by **Adviser Group**:
 
 | Field | Value |
 |---|---|
-| Description | `{products.Code}`<br>`{notional[Local]} @ {adviserFee%}`<br>`{adviser name(s)}` *(omit if blank — flag it)* |
+| Description | `{products.Code}`<br>`{notional[Local]} @ {adviserFee%}`<br>`{adviser name(s)}` *(if blank, write `[Adviser name]` as placeholder and flag it in the summary)* |
 | Qty | 1 |
 | Price | `notional[Local] × adviserFee%` |
 | Account | `310 - Referral Fees - Distribution fees` |
-| Tax | GST on Expenses (10%) |
+| Tax | GST on Expenses (10%) — Xero tax type: `INPUT` |
 
 **For USD products** (`products.Currency = USD`):
 
 | Field | Value |
 |---|---|
-| Description | `{products.Code}`<br>`Conversion Rate at {fx}`<br>`{notional[Local]} @ {adviserFee%}`<br>`{adviser name(s)}` *(omit if blank — flag it)* |
+| Description | `{products.Code}`<br>`Conversion Rate at {fx}`<br>`{notional[Local]} @ {adviserFee%}`<br>`{adviser name(s)}` *(if blank, write `[Adviser name]` as placeholder and flag it in the summary)* |
 | Qty | 1 |
 | Price | `(notional[Local] × adviserFee%) / fx` *(converts USD adviser fee to AUD)* |
 | Account | `310 - Referral Fees - Distribution fees` |
-| Tax | GST on Expenses (10%) |
+| Tax | GST on Expenses (10%) — Xero tax type: `INPUT` |
 
 > **FX Rate note:** `fx` is stored as AUD→USD (e.g., `0.7093` means 1 AUD = 0.7093 USD). Dividing by fx converts USD to AUD (e.g., $2,700 USD / 0.7093 ≈ $3,806 AUD). The FX field in Airtable may be `1` or outdated — **always ask the user for the current rate when creating RCTIs for USD products**.
 
 > **Adviser Fee % note:** stored as decimal in Airtable (e.g., `0.015` = 1.5%). No `/100` needed.
 
-> **Adviser name note:** if `Adviser(s)` field is blank, omit that description line and flag: _"Sales row [ID] has no adviser name — update Airtable before finalising."_ **Exception:** if Adviser Group is `Gloryhouse`, always use `Yan Hu` regardless of what Airtable says.
+> **Adviser name note:** if `Adviser(s)` field is blank, write `[Adviser name]` as a placeholder on the third description line — do not omit the line. Flag it in the summary table with ⚠️. **Exception:** if Adviser Group is `Gloryhouse`, always use `Yan Hu` regardless of what Airtable says.
 
 > **RCTI checkbox note:** Claude does NOT tick the RCTI checkbox in Airtable (read-only rule). User must tick it manually after reviewing POs in Xero.
 

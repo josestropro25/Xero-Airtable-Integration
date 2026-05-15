@@ -12,6 +12,17 @@
 Standard: `aefae6d5-7bbe-4e2e-aadc-302cd07a0fc1`
 Also available: Special Projects (`dfe23d27-a3a6-4ef3-a5ca-b9e02b142dde`), Very orange invoice! (`2ced98b8-3be9-42c4-ae79-fe3c8bca3490`)
 
+## High Priority (awaiting decision)
+
+### 12. RCTI branding theme not applied via API
+Xero's purchase order API accepts `brandingThemeId` but ignores it — POs are created without the RCTI branding theme regardless of what's passed.
+
+**Options:**
+1. Set RCTI as the default PO branding theme in Xero (Settings → Invoice Settings) — one-time fix, applies to all future POs
+2. Update branding manually on each PO after creation
+
+Awaiting approval from Jose's manager before changing Xero settings.
+
 ## Medium Priority
 
 ### 4. Eliminate the double-call for due date
