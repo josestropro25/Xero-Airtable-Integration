@@ -102,8 +102,10 @@ for (const product of products) {
     flags.push(`Duplicate invoices for ${code}: ${invs.map(i => i.number).join(', ')}`);
   }
 
-  // RCTI check
-  const pos = poMap[code] ?? [];
+  // RCTI check — same suffix matching as invoices
+  const pos = Object.entries(poMap)
+    .filter(([ref]) => ref === code || ref.startsWith(code + ' '))
+    .flatMap(([, entries]) => entries);
   let rctiStatus = '❌ Missing';
   if (pos.length >= 1) {
     rctiStatus = `✅ ${pos.map(p => p.number).join(', ')}`;

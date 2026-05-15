@@ -3,13 +3,15 @@
 
 ---
 
-## 1. Purpose
+## 1. Purpose & Scope
 
 Verify that every product in Airtable for a given period has both:
 - A **sales invoice** created in Xero (ACCREC)
-- An **RCTI** (purchase order) created in Xero for each adviser group
+- An **RCTI** (purchase order) created in Xero for each non-exempt adviser group
 
-Source of truth: **Xero** — not the Airtable Invoice/RCTI checkboxes (those are manually maintained and may lag behind).
+**This workflow is read-only.** It produces a classified report of what is complete, what is genuinely missing, and what is expected to be missing. It does not create or modify any documents. Invoice and RCTI creation is a separate workflow.
+
+Source of truth: **Xero** — not the Airtable Invoice/RCTI checkboxes (those are manually maintained and may lag).
 
 ---
 
@@ -17,166 +19,217 @@ Source of truth: **Xero** — not the Airtable Invoice/RCTI checkboxes (those ar
 
 User says: _"Reconcile April 2026"_ or _"Have we done all invoices and RCTIs for April?"_
 
+Extract the month and year. Derive date range: first day of month → first day of next month.
+
 ---
 
 ## 3. Context Management Rules
 
-These rules exist because a single reconciliation run covers ~55 products across 3 data sources. Violating them will exhaust the context window before the run is complete.
+A full reconciliation run covers ~55 products across 3 data sources. These rules prevent context exhaustion.
 
-### Mandatory rules
-- **Never dump a large API response directly into context.** Any response larger than ~20 records must be written to a file immediately after receiving it, before making the next API call. The tool result stays in context whether you write to disk or not — but writing to disk means you don't have to re-fetch it later if context rolls over.
-- **Use compact mode for Xero invoices.** `compact=true` on `list-invoices` returns ~5 tokens per invoice instead of ~200. Never fetch verbose invoices for a full-month reconciliation.
-- **Never make one Xero API call per product.** That's 55+ calls and will hit the context limit before finishing. Always use date-range bulk fetches.
-- **All cross-referencing happens in Node.js, not in the conversation.** Do not loop through products and check each against context. Write data files, run the script, paste the ~50-line output.
-- **Fetch all 3 sources in parallel** when context is fresh. Three simultaneous calls cost the same tokens as one and finish faster.
-- **The Airtable base ID is `appYvjM849EsLrpbW`.** Do not guess or look it up — use this directly.
+- **Never dump a large API response into context.** Write it to disk immediately after receiving it, before the next API call.
+- **Use `compact=true` for Xero invoices.** Returns ~5 tokens per invoice vs ~200 verbose. Never fetch verbose for a bulk run.
+- **Never make one Xero API call per product.** Always date-range bulk fetches.
+- **All cross-referencing runs in Node.js.** Do not loop products in conversation. Write files, run script, paste ~50-line output.
+- **Fetch all 3 sources in parallel** when context is fresh.
+- **Airtable base ID: `appYvjM849EsLrpbW`** — use directly, do not look up.
 
-### File locations for temp data
+### Temp file locations
 ```
-scripts/temp/products_apr2026.json   ← Airtable products
-scripts/temp/invoices_apr2026.txt    ← Xero invoices (compact)
-<Claude tool-results folder>/*.txt   ← Xero POs (auto-saved by Claude when response > limit)
+scripts/temp/products_<month>.json    ← Airtable products
+scripts/temp/invoices_<month>.txt     ← Xero invoices (compact)
+<Claude tool-results folder>/*.txt    ← Xero POs (auto-saved when response > limit)
 ```
 
 ---
 
-## 4. Token-Efficient Approach
+## Phase 1 — Gather Data
 
-**Total API calls: 3** (1 Airtable + 1 Xero invoices compact + 1 Xero POs)
+**Goal:** Fetch all 3 data sources, write to disk, run the script, get raw output.
+**API calls: 3 total.**
 
-### Step 1 — Get all products for the period from Airtable
-- Query Products table (`tblbqpCqSdBvxqc6T`) filtered by **Strike Date** range using server-side date operators
-- Filter format (confirmed working):
-  ```json
-  {
-    "operator": "and",
-    "operands": [
-      {"operator": ">=", "operands": ["fldRmizE67tvwOTc6", {"mode": "exactDate", "exactDate": "2026-04-01", "timeZone": "Australia/Sydney"}]},
-      {"operator": "<",  "operands": ["fldRmizE67tvwOTc6", {"mode": "exactDate", "exactDate": "2026-05-01", "timeZone": "Australia/Sydney"}]}
-    ]
-  }
-  ```
-- Fields to fetch: Code (`fldGwppKvbYFiTAsa`), Strike Date (`fldRmizE67tvwOTc6`), Currency (`fldUNJ9HydcFWOUPY`)
-- Result: list of ~55 products for the month, saved to file
-- **Do NOT filter by product code string** — use Strike Date field, it is the authoritative date
+### Step 1.1 — Fetch Airtable products (parallel with 1.2 and 1.3)
 
-### Step 2 — Fetch ALL invoices for the period from Xero in one call
-- Call `list-invoices` with `dateFrom=2026-04-01`, `dateTo=2026-05-01`, `type=ACCREC`, **`compact=true`**
-- `compact=true` returns only `Reference | InvoiceNumber | Status | Currency | Net` per line (~5 tokens per invoice vs ~200 verbose)
-- Result goes into context (~300 tokens for 70 invoices) — acceptable
-- Save this output to a text file for the Node.js script
+Query Products table (`tblbqpCqSdBvxqc6T`) filtered by Strike Date range:
 
-### Step 3 — Fetch ALL purchase orders from Xero in one call
-- Call `list-purchase-orders` with no filter (handler fetches all pages automatically)
-- Result saved to file — process with Node.js locally
-- Build a lookup: `{ [reference]: poNumber }` excluding DELETED status
+```json
+{
+  "operator": "and",
+  "operands": [
+    {"operator": ">=", "operands": ["fldRmizE67tvwOTc6", {"mode": "exactDate", "exactDate": "YYYY-MM-01", "timeZone": "Australia/Sydney"}]},
+    {"operator": "<",  "operands": ["fldRmizE67tvwOTc6", {"mode": "exactDate", "exactDate": "YYYY-MM-01 (next month)", "timeZone": "Australia/Sydney"}]}
+  ]
+}
+```
 
-### Step 4 — Cross-reference locally (Node.js, no API calls)
+Fields: Code (`fldGwppKvbYFiTAsa`), Strike Date (`fldRmizE67tvwOTc6`), Currency (`fldUNJ9HydcFWOUPY`)
+
+→ Write JSON response to `scripts/temp/products_<month>.json` immediately.
+
+### Step 1.2 — Fetch Xero invoices (parallel with 1.1 and 1.3)
+
+Call `list-invoices` with:
+- `dateFrom` = first day of month
+- `dateTo` = first day of next month
+- `type` = ACCREC
+- `compact` = true
+
+→ Write text output to `scripts/temp/invoices_<month>.txt` immediately.
+
+### Step 1.3 — Fetch Xero purchase orders (parallel with 1.1 and 1.2)
+
+Call `list-purchase-orders` with no filters. The handler fetches all pages automatically.
+
+→ Response auto-saves to Claude tool-results folder when it exceeds the size limit. Note the file path.
+
+### Step 1.4 — Run the reconciliation script
+
 ```bash
 node scripts/reconcile.js <products_file> <pos_file> <invoices_file>
 ```
-- Reads Airtable products file (JSON) and PO file (text) from disk
-- Reads compact invoice file (text) from disk
-- For each product: checks invoice lookup and PO lookup by reference
-- Applies Canaccord bulk PO rule (matches "Stropro [Month] FCNs" pattern)
-- Detects flags: duplicate invoices, etc.
 
-### Step 5 — Return summary only (tiny context footprint)
-Paste the Node.js output into the conversation. Total context cost: ~50 lines.
-
-**Script:** `scripts/reconcile.js`
+Paste the full output (~50 lines) into the conversation. Do not interpret yet.
 
 ---
 
-## 5. Output Format
+## Phase 2 — Classify Results
 
-| Product | Strike Date | Currency | Invoice | RCTI |
-|---|---|---|---|---|
-| CG 2026-04-1 | 2026-04-02 | AUD | ✅ INV-0883 | ✅ PO-0648 |
-| CG 2026-04-2 | 2026-04-07 | AUD | ❌ Missing | ✅ PO-0655 |
-| NX 2026-04-1 | 2026-04-07 | USD | ❌ Missing | ✅ PO-0671 |
+**Goal:** For every product not showing ✅ on both, determine whether the gap is genuine or expected.
+**No API calls in this phase** unless explicitly needed for a specific investigation.
 
-Followed by:
-- Count: X/Y complete (both done), X invoice-only, X RCTI-only, X neither
-- Any flags (duplicate invoices, unknown references, etc.)
+The script outputs four categories. Work through each:
+
+### Category A — ✅ Both complete
+No action. Skip.
+
+### Category B — Invoice only (✅ invoice, ❌ RCTI)
+
+These products have an invoice in Xero but no RCTI. Before treating as a genuine gap, check whether an RCTI was ever expected.
+
+**For each product in this category:**
+
+1. Query AdviserFees table (`tblnoxmwS2YM3Erjq`) for that product — fetch fields:
+   - Adviser Group (`fldz9bz3z1ZO2BFpj`)
+   - Settlement Party Adv (`fld4pYt0Ximcc9Y3z`)
+
+   Do this in a **single bulk call for all Category B products**, not one call per product.
+
+2. Apply exemption rules — if **all** AdviserFee rows for the product are exempt, no RCTI is expected:
+   - Adviser Group = `Cindy Mao` → exempt
+   - Adviser Group = `Self-Directed` or `Self Directed` → exempt
+
+3. Classify:
+   - **All rows exempt** → mark as `N/A — no RCTI expected`
+   - **Any non-exempt row exists** → mark as `RCTI MISSING — genuine gap`, add to action list
+
+### Category C — RCTI only (❌ invoice, ✅ RCTI)
+
+These products have an RCTI but no invoice. Check the invoice flag detail:
+
+- If the script flagged `⚠️ DUPLICATE` for this product → mark as `⚠️ DUPLICATE INVOICE — manual review needed`
+- If invoice was DELETED in Xero (visible from original compact output) → mark as `INVOICE DELETED — manual review needed`
+- Otherwise → mark as `INVOICE MISSING — genuine gap`, add to action list
+
+### Category D — Neither (❌ invoice, ❌ RCTI)
+
+Both are missing. Mark as `BOTH MISSING — genuine gap`, add both to action list.
+
+### Flags
+
+Any `⚠️` flag from the script output (duplicate invoices, duplicate RCTIs):
+- List them separately
+- Do not block the report — just surface for manual review
 
 ---
 
-## 6. Special Cases
+## Phase 3 — Produce Final Report
 
-### Xero reference suffixes (NW, MS, etc.)
-Invoice and RCTI references in Xero are sometimes created with a suffix appended to the product code. The suffix comes directly from the **Settlement Party Adv** field (`fld4pYt0Ximcc9Y3z`) in the AdviserFees table — it identifies the custodian/platform the adviser uses to settle trades.
+**Goal:** Deliver a clear, actionable summary. No further API calls.
 
-**Suffix mapping:**
-| Settlement Party Adv | Suffix | Example reference |
+### Report structure
+
+```
+RECONCILIATION — [Month Year]
+[date run]
+===================================================
+Total products:        XX
+✅ Both complete:      XX
+N/A (exempt, no RCTI): XX  ← Cindy Mao / Self-Directed
+⚠️  Flags (review):    XX
+--- Genuine gaps ---
+❌ Invoice missing:    XX
+❌ RCTI missing:       XX
+❌ Both missing:       XX
+===================================================
+```
+
+Followed by two action lists:
+
+**Invoices to create:**
+- [product code] | [strike date] | [currency]
+
+**RCTIs to create:**
+- [product code] | [adviser group] | [settlement party] | [suffix]
+
+And a flags section:
+**Manual review required:**
+- [product code] — [reason]
+
+### What this report is used for
+The action lists are handed off to the invoice/RCTI creation workflow. The reconciliation workflow ends here.
+
+---
+
+## Reference — Matching Rules
+
+### Xero reference suffixes (NW, MS)
+
+Invoice and RCTI references in Xero sometimes have a suffix derived from the **Settlement Party Adv** field (`fld4pYt0Ximcc9Y3z`) in AdviserFees:
+
+| Settlement Party Adv | Suffix | Example |
 |---|---|---|
-| Mason Stevens | ` MS` (sometimes ` - MS`) | `CG 2026-04-2 - MS`, `NX 2026-04-6 MS` |
-| NetWealth | ` NW` | `CG 2026-04-6 NW`, `NOMU 2026-04-2 NW` |
+| Mason Stevens | ` MS` (sometimes ` - MS`) | `NX 2026-04-6 MS` |
+| NetWealth | ` NW` | `CG 2026-04-6 NW` |
 | Stropro | none | `CG 2026-04-18` |
-| blank | none | Granite Bay products (MBL, some NX) |
+| blank | none | `MBL 2026-04-1` |
 
-**When building a reference for a new invoice or RCTI:**
+A product can have multiple AdviserFee rows with different suffixes (e.g. one NW and one MS trade). Both a suffixed invoice and a suffixed RCTI are expected — not a discrepancy.
+
+**Matching rule (used by `reconcile.js`):**
 ```
-reference = product_code + " " + suffix   (if Mason Stevens or NetWealth)
-reference = product_code                   (if Stropro or blank)
+ref === code  OR  ref.startsWith(code + ' ')
 ```
-
-**When matching Xero references to Airtable product codes (reconciliation):**
-- Accept an invoice/RCTI if its reference **starts with the product code followed by a space** (e.g. `CG 2026-04-4 NW` matches `CG 2026-04-4`)
-- Also accept exact match (reference == product code)
-- **Never use plain prefix match without the trailing space** — `CG 2026-04-1` would falsely match `CG 2026-04-10` or `CG 2026-04-12`
-- The `reconcile.js` script implements this correctly: `ref === code || ref.startsWith(code + ' ')`
-
-A product can have multiple AdviserFee rows with different Settlement Party Adv values (e.g. one NW trade and one MS trade). In that case both a suffixed invoice and a suffixed RCTI are expected — this is not a discrepancy.
+Never use `ref.startsWith(code)` without the trailing space — causes false matches on similar codes (e.g. `CG 2026-04-1` matching `CG 2026-04-10`).
 
 ### Canaccord bulk RCTIs
-Canaccord products are not covered by individual product-code POs. They appear under a bulk reference like `"Stropro April FCNs"` (PO-0682). When checking RCTI status for Canaccord products:
-- Look for a bulk PO covering the relevant month — if it exists, mark all Canaccord products for that month as ✅ RCTI
-- Do NOT mark as ❌ just because no individual product-code PO exists
 
-### Duplicate invoices
-If a product reference returns 2+ invoices (e.g. NOMU 2026-04-1 has INV-0913 and INV-0914):
-- Flag as ⚠️ DUPLICATE — list both invoice numbers
-- Do not block the reconciliation, just highlight for manual review
+Canaccord products are not covered by individual per-product POs. They appear under a monthly bulk reference like `"Stropro April FCNs"`. The script detects this pattern automatically. If the bulk PO exists for the month, all Canaccord products for that month show ✅ RCTI.
 
-### DELETED purchase orders
-Ignore DELETED POs in the reconciliation. If a product only has a DELETED PO and no replacement, mark as ❌ RCTI missing.
+### DELETED documents
 
-### Self-directed sales
-Products where all sales rows are Self-directed will have an invoice but no RCTI. This is expected — mark as ✅ Invoice | N/A RCTI.
+- DELETED invoices → excluded from matching (treated as not existing)
+- DELETED POs → excluded from matching (treated as not existing)
 
 ---
 
-## 7. Known Gaps (April 2026 as of 2026-05-15)
+## Known Gaps (April 2026 as of 2026-05-15)
 
-From reconciliation run using `scripts/reconcile.js` — 55 products, 3 API calls.
+From reconciliation run — 55 products, 3 API calls.
 
-**Results: 23 both complete | 23 invoice only (no RCTI) | 8 neither | 1 flag**
+**Raw counts:** 23 both complete | 23 invoice only | 8 neither | 1 flag
 
-**Missing invoices (8 products — never created):**
-- MBL: 04-1, 04-2, 04-3, 04-4
-- NX: 04-7, 04-8, 04-9, 04-10
+**Classified:**
+- 7 CG products (04-8 through 04-14) → invoice only, all Cindy Mao → N/A, expected
+- 16 products → genuine RCTI gap (NX 04-4/5/12-15, NOMU 04-2/3/4, BARC 04-2 through 06, BNP 04-1, C2 04-1)
+- 8 products → both missing (MBL 04-1 through 04-4, NX 04-7 through 04-10)
 
-**Missing RCTIs (31 products):**
-
-Has invoice, no RCTI:
-- CG: 04-8, 04-9, 04-10, 04-11, 04-12, 04-13, 04-14
-- BARC: 04-2, 04-3, 04-4, 04-5, 04-6
-- NX: 04-4, 04-5, 04-12, 04-13, 04-14, 04-15
-- NOMU: 04-2, 04-3, 04-4
-- C2 2026-04-1, BNP 2026-04-1
-
-Missing both (invoice + RCTI):
-- MBL: 04-1, 04-2, 04-3, 04-4
-- NX: 04-7, 04-8, 04-9, 04-10
-
-**Flags:**
-- ⚠️ NOMU 2026-04-1 — 2 invoices: INV-0913 ($6,150 PAID) + INV-0914 ($1,370 PAID). RCTI exists (PO-0662). Extra $1,370 charge needs explanation.
+**Manual review flags:**
+- ⚠️ NOMU 2026-04-1 — 2 invoices: INV-0913 ($6,150 PAID) + INV-0914 ($1,370 PAID). RCTI exists (PO-0662). Extra charge unexplained.
 - ⚠️ CG 2026-04-3 — 2 RCTIs: PO-0646 and PO-0647. Both active — confirm intentional.
 
 ---
 
-## 8. New Prefixes / Contacts Discovered
+## New Prefixes / Contacts Discovered
 
 | Prefix | Company | Contact ID |
 |---|---|---|

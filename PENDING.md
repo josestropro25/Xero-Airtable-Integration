@@ -42,17 +42,18 @@ Canaccord uses a **bulk RCTI** pattern: one PO per month to `Canaccord Genuity F
 ### ~~10. Invoice branding theme for production~~ ✓ DONE
 Invoices → Standard (`68901f31-8c32-40ae-b1bd-5fe9caaaabc9`). RCTIs → RCTI (`05148358-30af-46a9-97f3-26e3ad572273`).
 
-### 11. Settlement Party Adv logic for RCTIs
-The AdviserFees table has a `Settlement Party Adv` field (`fld4pYt0Ximcc9Y3z`, singleSelect) with values: **Stropro**, **Mason Stevens**, **NetWealth**, **Praemium**. This tracks which platform/custodian is settling the trade. Logic to be defined — will likely affect RCTI contact, GST treatment, or routing. User to provide rules when ready.
+### ~~11. Settlement Party Adv logic for RCTIs~~ ✓ PARTIALLY DONE
+Suffix rule documented and implemented in `reconcile.js` and `xero-airtable-rules.md`:
+- Mason Stevens → ` MS` suffix on reference
+- NetWealth → ` NW` suffix on reference
+- Stropro / blank → no suffix
+
+**Still pending:** wire this into the invoice/RCTI *creation* workflow so references are built with the correct suffix at creation time (not just matched correctly at reconciliation time).
 
 
 
-### 6. Invoice reconciliation workflow
-For a given month (e.g. April 2026), compare all products in Airtable against invoices in Xero and produce a match/mismatch report showing: expected amount vs actual amount, currency, status, and missing invoices.
-
-**Logic:** Query Airtable Products filtered by code pattern `xx 2026-04-xx` → calculate expected invoice per product → query Xero invoices filtered by reference → compare side by side.
-
-**Note:** Only meaningful against the production Xero org. Demo Company only has the test invoices created during development. Build the workflow now, point it at prod when ready (see item 8).
+### ~~6. Invoice reconciliation workflow~~ ✓ DONE
+Full SOP in `reconciliation-workflow.md`. Covers Phase 1 (data gathering), Phase 2 (classify results including exemption checks), Phase 3 (final report + action lists). Script at `scripts/reconcile.js`. First production run: April 2026, 55 products.
 
 ### 7. Purchase Orders workflow
 After the invoice workflow is stable, apply the same pattern to build a Purchase Orders automation pulling from the same Airtable base.

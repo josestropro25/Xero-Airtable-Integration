@@ -1,22 +1,24 @@
 # Current Priorities
-*Last updated: 2026-05-14 — update this file when focus shifts*
+*Last updated: 2026-05-15 — update this file when focus shifts*
 
 ## Active right now
 
-1. **Reconciliation workflow** — design and code the token-efficient April 2026 reconciliation (3 API calls + local Node.js processing). Approach documented in `reconciliation-workflow.md`.
+1. **April 2026 remediation** — reconciliation complete (23/55 both done). Genuine gaps identified:
+   - 8 products missing invoices: MBL 04-1 through 04-4, NX 04-7 through 04-10
+   - 16 products missing RCTIs: NX 04-4/5/12-15, NOMU 04-2/3/4, BARC 04-2 through 04-6, BNP 04-1, C2 04-1
+   - Manual review: NOMU 2026-04-1 duplicate invoices, CG 2026-04-3 duplicate RCTIs
 
-2. **Production Xero connection** — connected to real StroPro org. Validating invoice and RCTI creation against real data. CG 2026-05-6 invoice created successfully.
-
-3. **RCTI business rules mapping** — discovering real adviser group contacts and patterns from live Xero data. Canaccord bulk pattern documented. Several contacts still TBD (C2, JPM).
+2. **C2 and JPM prefix mapping** — unknown issuers, no Xero contacts yet. Need to identify before creating invoices.
 
 ## Near-term
 
-4. **Settlement Party Adv logic** — the AdviserFees table has a `Settlement Party Adv` field (Stropro, Mason Stevens, NetWealth, Praemium). Logic to be defined — affects RCTI routing.
+3. **Settlement Party Adv logic for RCTI creation** — suffix rule (MS/NW) is documented and used in reconciliation matching. Still need to wire it into the invoice/RCTI creation workflow so references are built correctly at creation time.
 
-5. **Canaccord RCTI contacts** — individual adviser contacts exist in Xero. Bulk vs individual RCTI decision logic established but not fully tested in production.
+4. **CG 2026-05-6 RCTI** — new adviser groups (Pridham Capital, Taylor Collinson, Bayside Asset Management) need Xero contacts created and flow clarified before RCTI can be created.
 
-## On the backlog
+## Done (recently)
 
-6. **Production org migration** — custom Xero connection ($10 AUD/month) purchased. Config updated. Working against real org now.
-
-7. **Invoice reconciliation tool** — build the full reconciliation script once approach is finalised.
+- ✅ Reconciliation workflow — 3-call approach, `scripts/reconcile.js`, full SOP in `reconciliation-workflow.md`
+- ✅ Settlement Party Adv suffix mapping — documented in rules and reconciliation workflow
+- ✅ Production Xero connection — live against real StroPro org
+- ✅ Canaccord bulk RCTI pattern — documented and detected by reconcile.js
