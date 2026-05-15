@@ -35,11 +35,11 @@ The fix: **immediately after receiving each API response, use the Write tool to 
 **Never rely on context to hold reconciliation data between steps.**
 
 ### Rules
-- **After every API call: write the response to disk immediately**, before making the next call. Use the Write tool.
+- **After every API call: write the response to disk** unless Claude already auto-saved it. Some large tool results (e.g. Xero POs, often 700+ lines) are auto-saved to a tool-results folder and Claude returns the file path — in that case, just note the path and skip the manual Write. For smaller responses (Airtable ~55 records, Xero invoices compact ~300 tokens) Claude does *not* auto-save — use the Write tool yourself.
 - **Use `compact=true` for Xero invoices.** Returns ~5 tokens per invoice vs ~200 verbose. Never fetch verbose for a bulk run.
 - **Never make one Xero API call per product.** Always date-range bulk fetches — 3 calls total for the entire month.
 - **All cross-referencing runs in Node.js, not in conversation.** Do not loop products in context. Write files, run script, paste ~50-line output.
-- **Fetch all 3 sources in parallel** when context is fresh — three simultaneous calls, then three writes to disk.
+- **Fetch all 3 sources in parallel** — issue all three tool calls in a *single message* (multiple tool_use blocks). Sequential calls waste round-trips and burn cache.
 - **Airtable base ID: `appYvjM849EsLrpbW`** — use directly, do not look up.
 
 ### Temp file locations
@@ -96,7 +96,14 @@ Call `list-purchase-orders` with no filters. The handler fetches all pages autom
 node scripts/reconcile.js <products_file> <pos_file> <invoices_file>
 ```
 
-Paste the full output (~50 lines) into the conversation. Do not interpret yet.
+Paste the full output (~50 lines) into the conversation. Do not interpret yet — that's Phase 2.
+
+**Compact invoice file format** (one line per invoice; for reference if writing your own parsing):
+```
+Reference | InvoiceNumber | Status | Currency | Net
+CG 2026-04-6 NW | INV-0881 | PAID | AUD | 3910
+NX 2026-04-1 - MS | INV-0886 | AUTHORISED | USD | 4250
+```
 
 ---
 
@@ -114,38 +121,59 @@ No action. Skip.
 
 These products have an invoice in Xero but no RCTI. Before treating as a genuine gap, check whether an RCTI was ever expected.
 
-**For each product in this category:**
+**Bulk-query AdviserFees once for ALL Category B products at the start of Phase 2** (single API call). Filter by Strike Date for the period being reconciled — same date range as Phase 1:
 
-1. Query AdviserFees table (`tblnoxmwS2YM3Erjq`) for that product — fetch fields:
-   - Adviser Group (`fldz9bz3z1ZO2BFpj`)
-   - Settlement Party Adv (`fld4pYt0Ximcc9Y3z`)
+```json
+{
+  "operator": "and",
+  "operands": [
+    {"operator": ">=", "operands": ["fldM6hUDPQMy0KEk6", {"mode": "exactDate", "exactDate": "YYYY-MM-01", "timeZone": "Australia/Sydney"}]},
+    {"operator": "<",  "operands": ["fldM6hUDPQMy0KEk6", {"mode": "exactDate", "exactDate": "YYYY-(MM+1)-01", "timeZone": "Australia/Sydney"}]}
+  ]
+}
+```
 
-   Do this in a **single bulk call for all Category B products**, not one call per product.
+Fetch fields:
+- Adviser Group (`fldz9bz3z1ZO2BFpj`)
+- Settlement Party Adv (`fld4pYt0Ximcc9Y3z`)
+- Product (`fldh9LunXPaSlSu26`) — to match rows back to product codes
 
-2. Apply exemption rules — if **all** AdviserFee rows for the product are exempt, no RCTI is expected:
+**For each Category B product, apply this logic:**
+
+1. Look up all AdviserFee rows for the product from the bulk response.
+2. Apply exemption rules — if **all** AdviserFee rows are exempt, no RCTI is expected:
    - Adviser Group = `Cindy Mao` → exempt
    - Adviser Group = `Self-Directed` or `Self Directed` → exempt
-
 3. Classify:
    - **All rows exempt** → mark as `N/A — no RCTI expected`
-   - **Any non-exempt row exists** → mark as `RCTI MISSING — genuine gap`, add to action list
+   - **Any non-exempt row exists** → mark as `RCTI MISSING — genuine gap`, add to action list with `(Adviser Group, Settlement Party Adv)` per non-exempt row (one RCTI per unique combination — see `xero-mcp-workflow.md` Section 7.2)
+
+> **Settlement Party Adv usage:** Phase 2 uses it only to populate the action list in Phase 3 — not to decide exemption. Exemption is by Adviser Group only.
 
 ### Category C — RCTI only (❌ invoice, ✅ RCTI)
 
-These products have an RCTI but no invoice. Check the invoice flag detail:
+These products have an RCTI but no invoice. Check the script output:
 
-- If the script flagged `⚠️ DUPLICATE` for this product → mark as `⚠️ DUPLICATE INVOICE — manual review needed`
-- If invoice was DELETED in Xero (visible from original compact output) → mark as `INVOICE DELETED — manual review needed`
-- Otherwise → mark as `INVOICE MISSING — genuine gap`, add to action list
+- If the script flagged `⚠️ DUPLICATE` invoices for this product (invoices exist but are flagged ambiguous, so script shows ❌ on the invoice column): treat as **RCTI status is fine; invoice review needed.** Surface in the flags section, do **not** add to either action list.
+- If invoice was DELETED in Xero (visible in the compact output, status `DELETED`): mark as `INVOICE DELETED — manual review needed`. Do not add to action list.
+- Otherwise → mark as `INVOICE MISSING — genuine gap`, add to invoice action list.
 
 ### Category D — Neither (❌ invoice, ❌ RCTI)
 
-Both are missing. Mark as `BOTH MISSING — genuine gap`, add both to action list.
+Both missing. Apply the same AdviserFees exemption check as Category B:
+- If all AdviserFee rows for the product are exempt (Cindy Mao / Self-Directed) → the RCTI side is `N/A`; only the invoice goes to the action list.
+- Otherwise → both go to the action list.
+
+### Edge case: ⚠️ Invoice flag + missing RCTI
+
+A product can show `⚠️ INV-XXXX, INV-YYYY` (duplicate invoices) **AND** `❌ Missing` RCTI. The script classifies this under Category C (because the invoice column doesn't start with `✅`), but it is really a Category B with a flag. Reclassify:
+- Add to RCTI action list (treat as Category B for RCTI purposes — run the AdviserFees exemption check)
+- Also surface the duplicate invoice in the flags section for manual review
 
 ### Flags
 
 Any `⚠️` flag from the script output (duplicate invoices, duplicate RCTIs):
-- List them separately
+- List in the flags section of Phase 3
 - Do not block the report — just surface for manual review
 
 ---
@@ -174,10 +202,14 @@ N/A (exempt, no RCTI): XX  ← Cindy Mao / Self-Directed
 Followed by two action lists:
 
 **Invoices to create:**
-- [product code] | [strike date] | [currency]
+- [product code] | [strike date] | [currency] | [internal/external + suffix]
 
 **RCTIs to create:**
-- [product code] | [adviser group] | [settlement party] | [suffix]
+- [product code] | [adviser group] | [settlement party] | [strike date]
+
+> **Adviser names are NOT fetched here.** The reconciliation workflow stops at adviser group. The creation workflow re-queries Sales/AdviserFees to get the individual adviser name (e.g. "Yan Hu" for Gloryhouse). This keeps reconciliation to 3 + 1 API calls total.
+
+> **Praemium handling:** If a Category B product has Settlement Party Adv = Praemium, list it in the RCTI action list with `[settlement party] = Praemium`, `[suffix] = TBD`. The creation workflow will stop and ask the user how to handle Praemium (the suffix and account treatment are not yet defined — see `xero-mcp-workflow.md` Section 6).
 
 And a flags section:
 **Manual review required:**
@@ -220,27 +252,21 @@ Canaccord products are not covered by individual per-product POs. They appear un
 
 ---
 
-## Known Gaps (April 2026 as of 2026-05-15)
+## New Prefixes / Contacts Discovered
 
-From reconciliation run — 55 products, 3 API calls.
+These prefixes were discovered during reconciliation runs but are not yet in `xero-mcp-workflow.md` Section 5.2 as fully-mapped issuer contacts. Move into Section 5.2 once confirmed.
 
-**Raw counts:** 23 both complete | 23 invoice only | 8 neither | 1 flag
+| Prefix | Company | Xero Contact ID |
+|---|---|---|
+| MS | Morgan Stanley | `e3ffacf5-3999-4a3d-a0f2-e6601108c5fa` |
+| C2 | Unknown — TBD | TBD |
+| JPM | JP Morgan (assumed) | TBD |
 
-**Classified:**
-- 7 CG products (04-8 through 04-14) → invoice only, all Cindy Mao → N/A, expected
-- 16 products → genuine RCTI gap (NX 04-4/5/12-15, NOMU 04-2/3/4, BARC 04-2 through 06, BNP 04-1, C2 04-1)
-- 8 products → both missing (MBL 04-1 through 04-4, NX 04-7 through 04-10)
-
-**Manual review flags:**
-- ⚠️ NOMU 2026-04-1 — 2 invoices: INV-0913 ($6,150 PAID) + INV-0914 ($1,370 PAID). RCTI exists (PO-0662). Extra charge unexplained.
-- ⚠️ CG 2026-04-3 — 2 RCTIs: PO-0646 and PO-0647. Both active — confirm intentional.
+> **Terminology collision:** The product prefix `MS` (Morgan Stanley as issuer) is different from the reference suffix ` MS` (Mason Stevens as settlement custodian). They look similar but mean different things — distinguish by context (prefix at the start of the code, suffix after a space).
 
 ---
 
-## New Prefixes / Contacts Discovered
+## Historical runs
 
-| Prefix | Company | Contact ID |
-|---|---|---|
-| MS | Morgan Stanley | `e3ffacf5-3999-4a3d-a0f2-e6601108c5fa` |
-| C2 | Unknown | TBD |
-| JPM | JP Morgan (assumed) | TBD |
+Past reconciliation snapshots are kept in `archives/` for reference, e.g.:
+- `archives/reconciliation-2026-04.md` — April 2026 run results

@@ -528,7 +528,7 @@ Sales rows for a product are grouped by **(Adviser Group × Settlement Party Adv
 - Triggered when user says "create one RCTI for these products" or lists multiple products for the same group
 
 **Exceptions — skip and notify the user, do NOT create a PO:**
-- Adviser Group = `"Cindi Mao"` → skip, report: _"Skipped: Cindi Mao — no PO required"_
+- Adviser Group = `"Cindy Mao"` → skip, report: _"Skipped: Cindy Mao — no PO required"_
 - Adviser Group = `"Self-directed"` (shown as `"Self Directed"` in Airtable) → skip, report: _"Skipped: Self-directed sale — no PO required"_
 
 **Tax exceptions by contact:**
@@ -547,7 +547,7 @@ Sales rows for a product are grouped by **(Adviser Group × Settlement Party Adv
    - Gets: Strike Date, Currency, FX Rate
 3. Query Airtable Sales table — filter by `Product name startsWith "BARC 2026-03-4:"` (**colon required — see Section 4.4**)
    - Gets per row: Adviser Group, Settlement Party Adv (via AdviserFees), Notional [Local], Adviser Fee %, Adviser(s), AdviserRev[Local]
-4. Filter out exception groups (`Cindi Mao`, `Self-directed`) — notify user for each skipped row
+4. Filter out exception groups (`Cindy Mao`, `Self-directed`) — notify user for each skipped row
 5. Group remaining rows by Adviser Group
 6. For each Adviser Group:
    - Verify the group exists as a Xero contact (create if missing — notify user)

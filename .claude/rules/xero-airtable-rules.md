@@ -53,7 +53,7 @@ Before creating any invoice or RCTI, check Xero for an existing document with th
 When checking, search by product code prefix: an existing `CG 2026-04-6 NW` counts as a match for product `CG 2026-04-6`.
 
 ## RCTI exceptions — skip and notify
-- Adviser Group = "Cindi Mao" → no RCTI
+- Adviser Group = "Cindy Mao" → no RCTI
 - Adviser Group = "Self-directed" / "Self Directed" → no RCTI
 
 ## RCTI tax exceptions by adviser group
