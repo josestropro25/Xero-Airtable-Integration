@@ -341,20 +341,22 @@ All fields are identical to internal **except** Reference and Description:
 ```
 {product.Code}
 {product.ISIN}
-{SUM(Amount[Cash])} @ {Upfront%}
+{SUM(Notional[Local])} @ {Upfront%}
 ```
 
 - `product.ISIN` comes from the ISIN field (`fldKuuUZJyI5AC2gp`) on the Products table
+- `Notional[Local]` = `fldGnTn09blO0Q6rq` in the Sales table — **not** `Amount[Cash]`
 - The third line shows the raw numbers — **do not calculate**, just display them
 - Use `@` as the separator, with a space on each side
-- Format the amount with commas and no decimal places (e.g. `270,000`); format the upfront as a percentage (e.g. `1.70%`) — no currency symbol, no dollar sign
+- Format the notional with commas and no decimal places (e.g. `500,000`); format the upfront as a percentage (e.g. `2.65%`) — no currency symbol, no dollar sign
 
-**Example** (NOMU 2026-05-1 MS, INV-0951):
+**Example** (CG 2026-03-15, INV-0873):
 ```
-NOMU 2026-05-1
-XS3361821740
-250,000 @ 1.7%
+CG 2026-03-15
+XS3159470494
+500,000 @ 2.65%
 ```
+Price = 500,000 × 2.65% = 13,250 ✅
 
 **Fields that differ from internal:**
 
@@ -365,7 +367,10 @@ XS3361821740
 | Account | `200 - Distribution Fees - Advisory` | `310 - Adviser Fees` | `310 - Adviser Fees` |
 | Branding Theme | Standard (`68901f31-8c32-40ae-b1bd-5fe9caaaabc9`) | Standard (`68901f31-8c32-40ae-b1bd-5fe9caaaabc9`) | Stropr Ops USD - Revenue (`e0ad3aaa-50bc-468e-a117-b719b6dd5ed5`) |
 
-Everything else (contact, date, currency, tax, price calculation, status) is identical to the internal spec.
+**Price calculation for external invoices:** `SUM(Notional[Local]) × Upfront% / 100`
+This differs from internal invoices which use `SUM(Amount[Cash]) × Upfront% / 100`.
+
+Everything else (contact, date, currency, tax, status) is identical to the internal spec.
 
 ### 6.2 Product Code Structure
 
@@ -426,12 +431,13 @@ MBL   → Macquarie Bank Limited
    - Gets: Strike Date, Upfront%, Currency, **ISIN** (external only)
 
 4. **Query Airtable Sales** — filter by `Product name startsWith "NX 2026-04-5:"` (**colon required**)
-   - Gets: SUM of `Amount [Cash]`
+   - Internal: get SUM of `Amount [Cash]` (`fldrqlyC6R5O3qSDc`)
+   - External: get SUM of `Notional [Local]` (`fldGnTn09blO0Q6rq`)
 
 5. **Build the invoice fields:**
-   - Reference: `product.Code` (internal) or `product.Code + " MS"/"  NW"` (external)
+   - Reference: `product.Code` (internal) or `product.Code + " MS"/" NW"` (external)
    - Description: internal format or external format (see 6.1 / 6.1b)
-   - Price: `SUM × Upfront% / 100` (same for both)
+   - Price: `SUM(Amount[Cash]) × Upfront% / 100` (internal) or `SUM(Notional[Local]) × Upfront% / 100` (external)
 
 6. **Call `xero:create-invoice`** with all fields including `dueDate`, `currencyCode`, `lineAmountTypes`, and `brandingThemeId`
 
