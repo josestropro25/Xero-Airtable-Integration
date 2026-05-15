@@ -27,11 +27,19 @@ Extract the month and year. Derive date range: first day of month → first day 
 
 A full reconciliation run covers ~55 products across 3 data sources. These rules prevent context exhaustion.
 
-- **Never dump a large API response into context.** Write it to disk immediately after receiving it, before the next API call.
+### How data flows — read this first
+Every API tool result lands in context automatically — you cannot prevent this. A full Airtable products response (~55 records) and a full Xero POs response (~700 lines) will both enter context whether you want them to or not. Left alone, they consume most of the context window before the reconciliation is even half done.
+
+The fix: **immediately after receiving each API response, use the Write tool to save it to a file on disk.** The `reconcile.js` script reads from files — not from context. Once saved to disk, the in-context copy serves no purpose and can be ignored. If context later compresses or rolls over, the data is safe on disk and the script still runs.
+
+**Never rely on context to hold reconciliation data between steps.**
+
+### Rules
+- **After every API call: write the response to disk immediately**, before making the next call. Use the Write tool.
 - **Use `compact=true` for Xero invoices.** Returns ~5 tokens per invoice vs ~200 verbose. Never fetch verbose for a bulk run.
-- **Never make one Xero API call per product.** Always date-range bulk fetches.
-- **All cross-referencing runs in Node.js.** Do not loop products in conversation. Write files, run script, paste ~50-line output.
-- **Fetch all 3 sources in parallel** when context is fresh.
+- **Never make one Xero API call per product.** Always date-range bulk fetches — 3 calls total for the entire month.
+- **All cross-referencing runs in Node.js, not in conversation.** Do not loop products in context. Write files, run script, paste ~50-line output.
+- **Fetch all 3 sources in parallel** when context is fresh — three simultaneous calls, then three writes to disk.
 - **Airtable base ID: `appYvjM849EsLrpbW`** — use directly, do not look up.
 
 ### Temp file locations
@@ -64,7 +72,7 @@ Query Products table (`tblbqpCqSdBvxqc6T`) filtered by Strike Date range:
 
 Fields: Code (`fldGwppKvbYFiTAsa`), Strike Date (`fldRmizE67tvwOTc6`), Currency (`fldUNJ9HydcFWOUPY`)
 
-→ Write JSON response to `scripts/temp/products_<month>.json` immediately.
+→ **Immediately use the Write tool** to save the full JSON response to `scripts/temp/products_<month>.json`. Do not proceed to Step 1.4 until this file exists on disk.
 
 ### Step 1.2 — Fetch Xero invoices (parallel with 1.1 and 1.3)
 
@@ -74,13 +82,13 @@ Call `list-invoices` with:
 - `type` = ACCREC
 - `compact` = true
 
-→ Write text output to `scripts/temp/invoices_<month>.txt` immediately.
+→ **Immediately use the Write tool** to save the text output to `scripts/temp/invoices_<month>.txt`. Do not proceed to Step 1.4 until this file exists on disk.
 
 ### Step 1.3 — Fetch Xero purchase orders (parallel with 1.1 and 1.2)
 
 Call `list-purchase-orders` with no filters. The handler fetches all pages automatically.
 
-→ Response auto-saves to Claude tool-results folder when it exceeds the size limit. Note the file path.
+→ This response is too large to fit in context. Claude will automatically save it to a file in the tool-results folder and return the file path. **Note that path — it is the `<pos_file>` argument for the script.** Do not attempt to read the full PO response into context.
 
 ### Step 1.4 — Run the reconciliation script
 

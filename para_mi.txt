@@ -15,31 +15,6 @@ Here, one product can have multiple advisor groups and therefore multiple adviso
 remove ids from Contacts for invoices and RCTis 
 
 
-Also add this note on the searching of invoices and rcti, some RCTI might have the MS or NW at the end. For example, CG 2026-04-4 invoice is number INV-0882, 'CG 2026-04-4 NW; Or 'CG 2026-04-6' is invoice INV-0881, name 'CG 2026-04-6 NW'. Write the note as you think you can understand and it is clear.
-
-Humm. We need to do something with the way you do this rec. You spent all the tokens in this last go, and you didnt even finish. How were you doing it?
-
-Also, I am planing/thinking  on creating a different workflow md file for reconciliation. In this way, we separate a bit processes and we do not mix the skills. 
-
-There should be way to do this more efficient or using a different approach. What do you recomend? 
-Dont do any code yet, lets think this well. I want you to really think in efficient way. 
-
-It does not matter if it is Multiple o  different steps . Like apllying filters when needed from Airtable, and Xero. For example, in airtable, apply like 'where strike date betwwen' 01-April, 2026 and 30 April,2026. Then, maybe the same logic for Xero and pulling all records for those dates. Then do a partial rec on your side, and only checthen do a partial rec and only check the items with no matches in their side:
-
-    "matched_invoice_and_po": 1089,
-    "missing_invoice": 42,
-    "missing_RCTI": 67,
-    "Missing invoice and RCTI": 10
-
-As a first step will be to provide the list and see how is the consumption here. We can do this as a first step, like providing a table with the results (with product codes). 
-
-Then a further step will be then to look into each one of them or something like that or maybe look for amount missmatches, etc.
-
-Or maybe use another format to store the data you pull or something, I have no idea.
-
-I dont know I am just giving rusty and ignorant ideas. Dont take them as the last word, you are the one who knows.
-
-
 
 
 
