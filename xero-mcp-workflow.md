@@ -294,7 +294,19 @@ Individual Canaccord contacts in Xero (for reference):
 
 ## 6. Invoice Creation Workflow
 
-### 6.1 Invoice Spec
+Invoices are either **internal** or **external** depending on how the trade was settled:
+
+| Type | Settlement Party Adv | Effect on invoice |
+|---|---|---|
+| Internal | Stropro | Standard reference and description |
+| External | Mason Stevens (`MS`) | Reference gets ` MS` suffix; description format differs |
+| External | NetWealth (`NW`) | Reference gets ` NW` suffix; description format differs |
+
+**How to determine type:** Query AdviserFees (`tblnoxmwS2YM3Erjq`) for the product and read `Settlement Party Adv` (`fld4pYt0Ximcc9Y3z`). If the user specifies the type explicitly (e.g. "create the MS invoice for NX 2026-04-5"), use that directly without querying.
+
+---
+
+### 6.1 Invoice Spec — Internal (Settlement Party Adv = Stropro)
 
 | Field | Value | Source |
 |---|---|---|
@@ -312,6 +324,46 @@ Individual Canaccord contacts in Xero (for reference):
 | Account | `201 - Distribution Fees - Advisory` | Fixed |
 | Tax Rate | GST Free Income | Fixed |
 | Status | DRAFT | Fixed (review before approving) |
+
+---
+
+### 6.1b Invoice Spec — External (Settlement Party Adv = Mason Stevens or NetWealth)
+
+All fields are identical to internal **except** Reference and Description:
+
+| Field | Internal value | External value |
+|---|---|---|
+| Reference | `product.Code` | `product.Code` + ` MS` or ` NW` |
+| Description | `Distribution Fees -- {product.Code}` | See format below |
+
+**External description format (multi-line):**
+```
+{product.Code}
+{product.ISIN}
+{SUM(Amount[Cash])} @ {Upfront%}
+```
+
+- `product.ISIN` comes from the ISIN field (`fldKuuUZJyI5AC2gp`) on the Products table
+- The third line shows the raw numbers — **do not calculate**, just display them
+- Use `@` as the separator, with a space on each side
+- Format the amount with commas and no decimal places (e.g. `270,000`); format the upfront as a percentage (e.g. `1.70%`) — no currency symbol, no dollar sign
+
+**Example** (NOMU 2026-05-1 MS, INV-0951):
+```
+NOMU 2026-05-1
+XS3361821740
+250,000 @ 1.7%
+```
+
+**Fields that differ from internal:**
+
+| Field | Internal | External |
+|---|---|---|
+| Reference | `product.Code` | `product.Code` + ` MS` or ` NW` |
+| Description | `Distribution Fees -- {product.Code}` | Multi-line format above |
+| Account | `201 - Distribution Fees - Advisory` | `310 - Adviser Fees` |
+
+Everything else (contact, date, branding, currency, tax, price calculation, status) is identical to the internal spec.
 
 ### 6.2 Product Code Structure
 
@@ -351,19 +403,35 @@ MBL   → Macquarie Bank Limited
 
 ### 6.4 Step-by-Step Claude Workflow
 
-**User says:** `"Create invoice for BARC 2026-04-2"`
+**User says:** `"Create invoice for NX 2026-04-5"` or `"Create the MS invoice for NX 2026-04-5"`
 
 **Claude does:**
-1. Check Xero — call `xero:list-invoices` filtered by `reference = "BARC 2026-04-2"`
-   - **If found** → stop. Report the existing invoice (ID, status, amount, link). Do not proceed.
-   - **If not found** → continue to step 2.
-2. Query Airtable Products table filtered by `Code = "BARC 2026-04-2"`
-   - Gets: Strike Date, Upfront%, Currency
-3. Query Airtable Sales table — filter by `Product name startsWith "BARC 2026-04-2:"` (**colon required — see Section 4.4**)
+
+1. **Determine type (internal or external)**
+   - If user specifies suffix explicitly ("MS invoice", "NW invoice") → use that, skip AdviserFees query
+   - Otherwise → query AdviserFees (`tblnoxmwS2YM3Erjq`) for the product, read `Settlement Party Adv` (`fld4pYt0Ximcc9Y3z`)
+     - Stropro or blank → internal
+     - Mason Stevens → external, suffix ` MS`
+     - NetWealth → external, suffix ` NW`
+
+2. **Duplicate check** — call `xero:list-invoices` with reference prefix matching:
+   - Internal: check for reference `= "NX 2026-04-5"`
+   - External: check for reference starting with `"NX 2026-04-5 "` (catches both NW and MS variants)
+   - **If found** → stop. Report the existing invoice. Do not proceed.
+   - **If not found** → continue.
+
+3. **Query Airtable Products** — filter by `Code = "NX 2026-04-5"`
+   - Gets: Strike Date, Upfront%, Currency, **ISIN** (external only)
+
+4. **Query Airtable Sales** — filter by `Product name startsWith "NX 2026-04-5:"` (**colon required**)
    - Gets: SUM of `Amount [Cash]`
-4. Calculate: `Price = SUM × Upfront%`
-5. Extract prefix `BARC` → map to Xero Contact ID
-6. Call `xero:create-invoice` with all fields including `dueDate`, `currencyCode`, `lineAmountTypes`, and `brandingThemeId`
+
+5. **Build the invoice fields:**
+   - Reference: `product.Code` (internal) or `product.Code + " MS"/"  NW"` (external)
+   - Description: internal format or external format (see 6.1 / 6.1b)
+   - Price: `SUM × Upfront% / 100` (same for both)
+
+6. **Call `xero:create-invoice`** with all fields including `dueDate`, `currencyCode`, `lineAmountTypes`, and `brandingThemeId`
 
 ### 6.5 Multi-product Invoices
 
