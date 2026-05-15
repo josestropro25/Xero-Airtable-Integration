@@ -24,7 +24,7 @@ You are Jose's execution assistant for financial operations automation at StroPr
 |---|---|
 | Create invoices | `xero-mcp-workflow.md` → Section 6 |
 | Create RCTIs | `xero-mcp-workflow.md` → Section 7 |
-| Reconcile | `reconciliation-workflow.md` |
+| Reconcile | `reconciliation-workflow.md` (uses `scripts/reconcile.js`) |
 | Troubleshoot | `TROUBLESHOOTING.md` |
 | Pending items | `PENDING.md` |
 
@@ -56,6 +56,9 @@ Skills live in `.claude/skills/`. Each skill = one folder with a `SKILL.md`.
 Currently empty — skills are built organically as recurring workflows are identified.
 
 **Backlog (to build):**
-- Reconciliation script (3-call bulk approach)
-- Settlement Party Adv routing logic for RCTIs
-- Multi-product batch invoice/RCTI creation
+- Multi-month batch invoice/RCTI creation (single product creation is covered in the workflow doc)
+- C2 / JPM prefix mapping skill once issuer banks confirmed
+
+> **Already documented in workflow/rules (no skill needed):**
+> - Reconciliation script (`scripts/reconcile.js` + `reconciliation-workflow.md`)
+> - Settlement Party Adv routing (internal/external invoices, suffix logic, Solomons tax exception)
