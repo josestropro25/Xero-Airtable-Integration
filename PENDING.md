@@ -43,12 +43,15 @@ Canaccord uses a **bulk RCTI** pattern: one PO per month to `Canaccord Genuity F
 Invoices → Standard (`68901f31-8c32-40ae-b1bd-5fe9caaaabc9`). RCTIs → RCTI (`05148358-30af-46a9-97f3-26e3ad572273`).
 
 ### ~~11. Settlement Party Adv logic for RCTIs~~ ✓ PARTIALLY DONE
-Suffix rule documented and implemented in `reconcile.js` and `xero-airtable-rules.md`:
-- Mason Stevens → ` MS` suffix on reference
-- NetWealth → ` NW` suffix on reference
-- Stropro / blank → no suffix
+Suffix rule documented in `reconcile.js`, `xero-airtable-rules.md`, and `xero-mcp-workflow.md`:
+- Mason Stevens → ` MS` suffix on invoice reference; account 310; 3-line description
+- NetWealth → ` NW` suffix on invoice reference; account 310; 3-line description
+- Stropro / blank → no suffix; account 201; single-line description
+- RCTI reference never gets a suffix regardless of settlement party
 
-**Still pending:** wire this into the invoice/RCTI *creation* workflow so references are built with the correct suffix at creation time (not just matched correctly at reconciliation time).
+**Invoice creation workflow: ✅ done** — Section 6.1b in `xero-mcp-workflow.md`
+
+**Still pending:** external RCTI creation workflow — does the RCTI spec change for MS/NW products beyond what's already documented?
 
 
 

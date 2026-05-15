@@ -12,7 +12,7 @@
 
 ## Near-term
 
-3. **Settlement Party Adv logic for RCTI creation** — suffix rule (MS/NW) is documented and used in reconciliation matching. Still need to wire it into the invoice/RCTI creation workflow so references are built correctly at creation time.
+3. **Settlement Party Adv — external RCTI creation** — external invoice spec done (Section 6.1b in `xero-mcp-workflow.md`): suffix on reference, account 310, 3-line description with ISIN. Still need to document the external RCTI creation spec.
 
 4. **CG 2026-05-6 RCTI** — new adviser groups (Pridham Capital, Taylor Collinson, Bayside Asset Management) need Xero contacts created and flow clarified before RCTI can be created.
 

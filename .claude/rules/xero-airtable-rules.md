@@ -24,10 +24,24 @@ FX format: AUD→USD (e.g. 0.7099 = 1 AUD = 0.7099 USD). Convert: `Price AUD = U
 Never auto-create a bulk Canaccord RCTI. If multiple Canaccord products share the same strike date month, flag it:
 > "⚠️ I've detected [N] products under Canaccord in [Month]: [list]. Bulk or individual?"
 
+## Internal vs External invoices and RCTIs
+
+Invoices and RCTIs are either **internal** (Settlement Party Adv = Stropro) or **external** (Mason Stevens or NetWealth). This affects the reference, description, and account code.
+
+| Field | Internal | External (MS) | External (NW) |
+|---|---|---|---|
+| Reference suffix | none | ` MS` | ` NW` |
+| Invoice description | `Distribution Fees -- {code}` | 3-line: code / ISIN / `amount @ upfront%` | same as MS |
+| Invoice account | `201 - Distribution Fees - Advisory` | `310 - Adviser Fees` | `310 - Adviser Fees` |
+| RCTI contact | Adviser group | Adviser group | Adviser group |
+| RCTI reference | `product.Code` | `product.Code` | `product.Code` |
+
+Note: the suffix applies to the **invoice reference only** — RCTI references never have the MS/NW suffix.
+
 ## Reference suffix from Settlement Party Adv
 When building the Xero reference for an invoice or RCTI, check the **Settlement Party Adv** field (`fld4pYt0Ximcc9Y3z`) in the AdviserFees table:
-- `Mason Stevens` → append ` MS` → e.g. `CG 2026-04-2 MS`
-- `NetWealth` → append ` NW` → e.g. `CG 2026-04-6 NW`
+- `Mason Stevens` → append ` MS` to invoice reference → e.g. `CG 2026-04-2 MS`
+- `NetWealth` → append ` NW` to invoice reference → e.g. `CG 2026-04-6 NW`
 - `Stropro` or blank → no suffix → e.g. `CG 2026-04-18`
 
 When matching existing Xero references back to product codes (duplicate check, reconciliation):
