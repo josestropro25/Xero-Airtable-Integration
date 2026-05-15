@@ -111,11 +111,21 @@ node scripts/reconcile.js <products_file> <pos_file> <invoices_file>
 
 Paste the full output (~50 lines) into the conversation. Do not interpret yet — that's Phase 2.
 
+**Output sections to expect:**
+1. Summary counts (Both complete / Invoice only / RCTI only / Neither / Flags)
+2. Full table — per-product status with annotations like `(multi: <reference>)` when a multi-product invoice covers the row
+3. `--- Missing Invoice ---` — products lacking an invoice
+4. `--- Missing RCTI ---` — products lacking an RCTI
+5. `--- Flags ---` — duplicate invoices, multiple RCTIs
+6. `--- Bulk Canaccord POs detected ---` — monthly bulk POs; **not auto-matched** to products, handle in Phase 2
+
 **Compact invoice file format** (one line per invoice; for reference if writing your own parsing):
 ```
 Reference | InvoiceNumber | Status | Currency | Net
 CG 2026-04-6 NW | INV-0881 | PAID | AUD | 3910
 NX 2026-04-1 - MS | INV-0886 | AUTHORISED | USD | 4250
+CG 2026-03-1 & CG 2026-03-2 | INV-0824 | PAID | AUD | 7300
+NX 2026-03-10, 11, 12 | INV-0878 | PAID | USD | 13600
 ```
 
 ---
@@ -185,9 +195,18 @@ A product can show `⚠️ INV-XXXX, INV-YYYY` (duplicate invoices) **AND** `❌
 
 ### Flags
 
-Any `⚠️` flag from the script output (duplicate invoices, duplicate RCTIs):
+Any `⚠️` flag from the script output:
+- `Duplicate invoices for X` — multiple non-DELETED invoices for the same product code
+- `Multiple RCTIs for X` — multiple non-DELETED POs for the same product code
 - List in the flags section of Phase 3
 - Do not block the report — just surface for manual review
+
+### Bulk Canaccord PO handling
+
+If the script emits a `--- Bulk Canaccord POs detected ---` section, note the PO numbers but do **not** apply them automatically. During Category B classification, if any product has Adviser Group matching `Canaccord [City]`:
+- Look up the bulk PO for that strike month from the detected list
+- If a bulk PO exists → that product is covered → mark as `N/A — bulk PO-XXXX`, do not add to action list
+- If no bulk PO exists → genuine RCTI gap; in the report, group all such products and surface with "Canaccord bulk pattern may apply — DETECT AND ASK before creating individually"
 
 ---
 
@@ -256,7 +275,22 @@ Never use `ref.startsWith(code)` without the trailing space — causes false mat
 
 ### Canaccord bulk RCTIs
 
-Canaccord products are not covered by individual per-product POs. They appear under a monthly bulk reference like `"Stropro April FCNs"`. The script detects this pattern automatically. If the bulk PO exists for the month, all Canaccord products for that month show ✅ RCTI.
+Canaccord products are not covered by individual per-product POs. They appear under a monthly bulk reference like `"Stropro April FCNs"`.
+
+The script **detects** these bulk POs and surfaces them in a separate `--- Bulk Canaccord POs detected ---` output section. It does **not** auto-match them against products — the script doesn't know which products are Canaccord (that requires AdviserFees data).
+
+In Phase 2, when a Category B product turns out to be Canaccord (Adviser Group = `Canaccord [City]`), check the bulk PO list:
+- If a bulk PO exists for that month → mark as `N/A — covered by bulk PO-XXXX`
+- If no bulk PO exists → genuine RCTI gap; in the report, flag as "Canaccord bulk pattern may apply — DETECT AND ASK" (per `xero-mcp-workflow.md` Section 5.7)
+
+### Multi-product invoices and RCTIs
+
+The script automatically expands references that cover multiple products. Examples it handles:
+- `CG 2026-03-1 & CG 2026-03-2` → both products marked ✅
+- `NX 2026-03-10, 11, 12` → all three products marked ✅ (subsequent sequence numbers inferred from the first)
+- `BARC 2026-04-3 / 04-4 / 04-5` → all three marked ✅ (subsequent `MM-N` pairs inferred from the first)
+
+Multi-product matches are annotated in the full table as `✅ INV-XXXX (multi: <original reference>)`. Suffixes like ` NW` or ` MS` on the trailing part are ignored — the expansion only follows commas, ampersands, slashes, and the word "and".
 
 ### DELETED documents
 
